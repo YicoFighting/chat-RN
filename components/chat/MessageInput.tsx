@@ -3,7 +3,7 @@ import { View, TextInput, TouchableOpacity, Image, ScrollView, Alert, Platform, 
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
-import { Audio } from 'expo-av';
+import { useAudioRecorder, AudioModule, RecordingPresets } from 'expo-audio';
 import { Plus, ArrowUp, X, Square, Mic, Check } from 'lucide-react-native';
 import { useColorScheme } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -33,7 +33,7 @@ export default function MessageInput({ onSend, disabled, isStreaming, onStop }: 
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [isTranscribing, setIsTranscribing] = useState(false);
-  const recordingRef = useRef<Audio.Recording | null>(null);
+  const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const recordingTimerRef = useRef<any>(null);
 
   // Camera permissions hook
@@ -55,21 +55,18 @@ export default function MessageInput({ onSend, disabled, isStreaming, onStop }: 
 
   const startRecording = async () => {
     try {
-      const permission = await Audio.requestPermissionsAsync();
-      if (permission.status !== 'granted') {
+      const permission = await AudioModule.requestRecordingPermissionsAsync();
+      if (!permission.granted) {
         Alert.alert('需要麦克风权限', '请在系统设置中允许应用访问麦克风以进行语音输入。');
         return;
       }
 
-      await Audio.setAudioModeAsync({
+      await AudioModule.setAudioModeAsync({
         allowsRecordingIOS: true,
         playsInSilentModeIOS: true,
       });
 
-      const { recording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
-      recordingRef.current = recording;
+      audioRecorder.record();
       setIsRecording(true);
       setRecordingSeconds(0);
 
@@ -87,20 +84,17 @@ export default function MessageInput({ onSend, disabled, isStreaming, onStop }: 
       clearInterval(recordingTimerRef.current);
       recordingTimerRef.current = null;
     }
-    const recording = recordingRef.current;
-    if (!recording) return;
 
     try {
-      await recording.stopAndUnloadAsync();
-      const uri = recording.getURI();
-      recordingRef.current = null;
+      await audioRecorder.stop();
+      const uri = audioRecorder.uri;
       setIsRecording(false);
 
       if (shouldTranscribe && uri) {
         setIsTranscribing(true);
         const { baseUrl, apiKey, provider } = useSettingStore.getState();
         if (!apiKey.trim()) {
-          Alert.alert('未配置 API Key', '请先在“设置”页面中配置 API 密钥再使用语音转文字功能。');
+          Alert.alert('未配置 API Key', '请先在"设置"页面中配置 API 密钥再使用语音转文字功能。');
           return;
         }
 
