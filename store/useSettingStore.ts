@@ -59,6 +59,9 @@ export interface SettingState {
   baseUrl: string;
   apiKey: string;
   model: string;
+  systemPrompt: string;
+  temperature: number;
+  maxTokens: number;
   setSettings: (settings: Partial<Omit<SettingState, "setSettings">>) => void;
 }
 
@@ -69,6 +72,9 @@ export const useSettingStore = create<SettingState>()(
       baseUrl: "https://api.openai.com/v1",
       apiKey: "",
       model: "gpt-4o",
+      systemPrompt: "",
+      temperature: 0.7,
+      maxTokens: 2048,
       setSettings: (newSettings) =>
         set((state) => ({ ...state, ...newSettings })),
     }),

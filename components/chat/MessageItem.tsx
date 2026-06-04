@@ -1,17 +1,146 @@
 import { Message } from "@/store/useChatStore";
 import { Image } from "expo-image";
-import { Brain, ChevronDown, ChevronRight } from "lucide-react-native";
-import { useState } from "react";
-import { Animated, Text, TouchableOpacity, View } from "react-native";
+import { Brain, ChevronDown, ChevronRight, Copy, Check, RotateCcw, Volume2, Trash2, Edit3, Share2 } from "lucide-react-native";
+import { useState, useEffect, useRef } from "react";
+import { Animated, Text, TouchableOpacity, View, ScrollView, Platform, useColorScheme, Modal, Vibration, TextInput, Share } from "react-native";
+import Markdown from 'react-native-markdown-display';
+import * as Clipboard from 'expo-clipboard';
+import * as Speech from 'expo-speech';
 
 interface MessageItemProps {
   message: Message;
+  isLast?: boolean;
+  onRegenerate?: () => void;
+  onDelete?: () => void;
+  onEdit?: (id: string, newContent: string) => void;
+  disabled?: boolean;
 }
 
-export default function MessageItem({ message }: MessageItemProps) {
+interface CodeBlockProps {
+  code: string;
+  language: string;
+  isDark: boolean;
+}
+
+function CodeBlock({ code, language, isDark }: CodeBlockProps) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    await Clipboard.setStringAsync(code.trim());
+    setCopied(true);
+    setTimeout(() => {
+      setCopied(false);
+    }, 2000);
+  };
+
+  return (
+    <View className="my-2 rounded-xl overflow-hidden border border-neutral-200 dark:border-neutral-800 bg-neutral-900 dark:bg-[#121212] w-full">
+      {/* Header bar */}
+      <View className="flex-row items-center justify-between px-4 py-2 bg-neutral-800 dark:bg-[#1A1A1A] border-b border-neutral-700 dark:border-neutral-800">
+        <Text className="text-xs font-semibold text-neutral-400 uppercase">
+          {language || 'code'}
+        </Text>
+        <TouchableOpacity 
+          onPress={handleCopy} 
+          className="flex-row items-center px-2 py-1 rounded bg-neutral-700 dark:bg-neutral-800 active:bg-neutral-600"
+        >
+          {copied ? (
+            <>
+              <Check color="#22C55E" size={12} />
+              <Text className="text-xs text-green-500 font-medium ml-1.5">Copied</Text>
+            </>
+          ) : (
+            <>
+              <Copy color="#A3A3A3" size={12} />
+              <Text className="text-xs text-neutral-300 font-medium ml-1.5">Copy</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
+
+      {/* Code Text */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="w-full">
+        <Text 
+          style={{ fontFamily: Platform.OS === 'ios' ? 'Courier New' : 'monospace' }}
+          className="p-4 text-xs text-neutral-200 leading-5 select-text"
+        >
+          {code.trim()}
+        </Text>
+      </ScrollView>
+    </View>
+  );
+}
+
+export default function MessageItem({ message, isLast, onRegenerate, onDelete, onEdit, disabled }: MessageItemProps) {
   const isUser = message.role === "user";
   const [thinkingExpanded, setThinkingExpanded] = useState(true);
   const fadeAnim = useState(new Animated.Value(1))[0];
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
+
+  // Typewriter typewriter state and animation refs
+  const [displayedContent, setDisplayedContent] = useState(message.content || '');
+  const queueRef = useRef<string[]>([]);
+  const timerRef = useRef<any>(null);
+  const currentLengthRef = useRef(0);
+  const isStreamingRef = useRef(disabled);
+
+  useEffect(() => {
+    isStreamingRef.current = disabled;
+  }, [disabled]);
+
+  useEffect(() => {
+    const shouldAnimate = !isUser && isLast && disabled;
+
+    if (!shouldAnimate) {
+      if (timerRef.current) clearInterval(timerRef.current);
+      queueRef.current = [];
+      setDisplayedContent(message.content || '');
+      currentLengthRef.current = (message.content || '').length;
+      return;
+    }
+
+    const currentText = message.content || '';
+    const lastLength = currentLengthRef.current;
+
+    if (currentText.length > lastLength) {
+      const newChars = currentText.slice(lastLength).split('');
+      queueRef.current.push(...newChars);
+      currentLengthRef.current = currentText.length;
+
+      if (!timerRef.current) {
+        timerRef.current = setInterval(() => {
+          if (queueRef.current.length > 0) {
+            const count = queueRef.current.length > 30 ? 4 : queueRef.current.length > 10 ? 2 : 1;
+            const toAppend = queueRef.current.splice(0, count).join('');
+            setDisplayedContent((prev) => prev + toAppend);
+          } else {
+            if (!isStreamingRef.current) {
+              clearInterval(timerRef.current);
+              timerRef.current = null;
+            }
+          }
+        }, 20);
+      }
+    }
+  }, [message.content, isLast, disabled, isUser]);
+
+  // TTS, Context Menu & Edit state
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editText, setEditText] = useState(message.content || '');
+
+  useEffect(() => {
+    return () => {
+      Speech.stop();
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    setEditText(message.content || '');
+  }, [message.content]);
 
   const toggleThinking = () => {
     const newValue = !thinkingExpanded;
@@ -33,21 +162,172 @@ export default function MessageItem({ message }: MessageItemProps) {
     }
   };
 
+  const handleLongPress = () => {
+    Vibration.vibrate(50);
+    setIsMenuOpen(true);
+  };
+
+  const handleCopyAll = async () => {
+    setIsMenuOpen(false);
+    if (message.content) {
+      await Clipboard.setStringAsync(message.content);
+    }
+  };
+
+  const handleShare = async () => {
+    setIsMenuOpen(false);
+    if (message.content) {
+      try {
+        await Share.share({ message: message.content });
+      } catch (e) {
+        console.warn(e);
+      }
+    }
+  };
+
+  const handleTTS = async () => {
+    setIsMenuOpen(false);
+    if (isSpeaking) {
+      Speech.stop();
+      setIsSpeaking(false);
+    } else {
+      setIsSpeaking(true);
+      Speech.speak(message.content, {
+        onDone: () => setIsSpeaking(false),
+        onError: () => setIsSpeaking(false),
+        onStopped: () => setIsSpeaking(false),
+      });
+    }
+  };
+
+  const markdownStyles = (isDark: boolean) => ({
+    body: {
+      color: isDark ? '#E5E5E5' : '#171717',
+      fontSize: 15,
+      lineHeight: 22,
+    },
+    link: {
+      color: '#3B82F6',
+      textDecorationLine: 'underline' as const,
+    },
+    paragraph: {
+      marginTop: 0,
+      marginBottom: 8,
+    },
+    heading1: {
+      color: isDark ? '#FFF' : '#000',
+      fontSize: 20,
+      fontWeight: 'bold' as const,
+      marginTop: 12,
+      marginBottom: 6,
+    },
+    heading2: {
+      color: isDark ? '#FFF' : '#000',
+      fontSize: 17,
+      fontWeight: 'bold' as const,
+      marginTop: 10,
+      marginBottom: 4,
+    },
+    heading3: {
+      color: isDark ? '#FFF' : '#000',
+      fontSize: 15,
+      fontWeight: 'bold' as const,
+      marginTop: 8,
+      marginBottom: 4,
+    },
+    bullet_list: {
+      marginTop: 4,
+      marginBottom: 8,
+    },
+    ordered_list: {
+      marginTop: 4,
+      marginBottom: 8,
+    },
+    list_item: {
+      lineHeight: 20,
+      marginVertical: 2,
+    },
+    code_inline: {
+      fontFamily: Platform.OS === 'ios' ? 'Courier New' : 'monospace',
+      backgroundColor: isDark ? '#262626' : '#E5E5E5',
+      color: isDark ? '#F43F5E' : '#D0173E',
+      paddingHorizontal: 5,
+      paddingVertical: 2,
+      borderRadius: 4,
+    },
+    blockquote: {
+      backgroundColor: isDark ? '#1C1917' : '#F5F5F4',
+      borderLeftColor: '#A3A3A3',
+      borderLeftWidth: 4,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      marginVertical: 8,
+      borderRadius: 4,
+    },
+    table: {
+      borderWidth: 1,
+      borderColor: isDark ? '#404040' : '#D4D4D4',
+      borderRadius: 6,
+      marginVertical: 8,
+    },
+    thead: {
+      backgroundColor: isDark ? '#262626' : '#F5F5F5',
+    },
+    th: {
+      padding: 8,
+      fontWeight: 'bold' as const,
+    },
+    tr: {
+      borderBottomWidth: 1,
+      borderBottomColor: isDark ? '#404040' : '#D4D4D4',
+    },
+    td: {
+      padding: 8,
+    },
+  });
+
+  const renderRules = {
+    fence: (node: any) => {
+      const codeText = node.content || '';
+      const language = node.info || 'code';
+      return (
+        <CodeBlock 
+          key={node.key} 
+          code={codeText} 
+          language={language} 
+          isDark={isDark} 
+        />
+      );
+    }
+  };
+
   return (
-    <View className={`px-4 py-2 ${isUser ? "items-end" : "items-start"}`}>
-      <View
+    <View className={`px-4 py-2 w-full ${isUser ? "items-end" : "items-start"}`}>
+      <TouchableOpacity
+        activeOpacity={0.95}
+        onLongPress={handleLongPress}
         className={`max-w-[85%] rounded-2xl px-4 py-3 ${
           isUser
             ? "bg-black dark:bg-white"
             : "bg-neutral-100 dark:bg-neutral-800"
         }`}
       >
-        {message.imageBase64 && (
-          <Image
-            source={{ uri: `data:image/jpeg;base64,${message.imageBase64}` }}
-            className="w-48 h-48 rounded-xl mb-2"
-            contentFit="cover"
-          />
+        {/* Multi-image preview grid/flex */}
+        {message.imagesBase64 && message.imagesBase64.length > 0 && (
+          <View className="flex-row flex-wrap gap-2 mb-2">
+            {message.imagesBase64.map((b64, index) => (
+              <Image
+                key={index}
+                source={{ uri: `data:image/jpeg;base64,${b64}` }}
+                className={`${
+                  message.imagesBase64!.length === 1
+                    ? 'w-48 h-48'
+                    : 'w-24 h-24'
+                } rounded-xl`}
+                contentFit="cover"
+              />
+            ))}
+          </View>
         )}
 
         {/* Thinking section */}
@@ -86,18 +366,179 @@ export default function MessageItem({ message }: MessageItemProps) {
           </View>
         )}
 
-        {message.content ? (
-          <Text
-            className={`text-[15px] leading-6 ${
-              isUser
-                ? "text-white dark:text-black"
-                : "text-neutral-900 dark:text-neutral-100"
-            }`}
-          >
-            {message.content}
-          </Text>
+        {displayedContent ? (
+          isUser ? (
+            <Text
+              className="text-[15px] leading-6 text-white dark:text-black"
+            >
+              {message.content}
+            </Text>
+          ) : (
+            <View className="w-full">
+              <Markdown 
+                style={markdownStyles(isDark)}
+                rules={renderRules}
+              >
+                {displayedContent}
+              </Markdown>
+            </View>
+          )
         ) : null}
-      </View>
+      </TouchableOpacity>
+
+      {/* Assistant actions (Regenerate) */}
+      {!isUser && isLast && !disabled && message.content && (
+        <View className="flex-row items-center mt-2 pl-2">
+          <TouchableOpacity 
+            onPress={onRegenerate}
+            className="flex-row items-center px-3 py-1.5 rounded-full bg-neutral-50 dark:bg-[#171717] border border-neutral-200 dark:border-neutral-800 active:bg-neutral-100"
+          >
+            <RotateCcw color={isDark ? '#FFF' : '#737373'} size={12} />
+            <Text className="text-xs font-semibold text-neutral-600 dark:text-neutral-300 ml-1.5">
+              Regenerate
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Bottom Sheet Menu */}
+      <Modal
+        visible={isMenuOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setIsMenuOpen(false)}
+      >
+        <TouchableOpacity 
+          activeOpacity={1} 
+          onPress={() => setIsMenuOpen(false)}
+          className="flex-1 bg-black/40 justify-end"
+        >
+          <View className="bg-white dark:bg-[#121212] rounded-t-3xl px-6 pt-6 pb-8 border-t border-neutral-100 dark:border-neutral-900">
+            {/* Grabber */}
+            <View className="w-12 h-1.5 bg-neutral-200 dark:bg-neutral-800 rounded-full mb-6 mx-auto" />
+            
+            <Text className="text-xs font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider mb-4">
+              Options
+            </Text>
+
+            {/* Edit Message (User Only) */}
+            {isUser && (
+              <TouchableOpacity 
+                onPress={() => {
+                  setIsMenuOpen(false);
+                  setIsEditOpen(true);
+                }}
+                className="flex-row items-center py-4 border-b border-neutral-100 dark:border-neutral-900 active:opacity-60"
+              >
+                <Edit3 color={isDark ? '#FFF' : '#000'} size={18} />
+                <Text className="text-base font-semibold text-neutral-900 dark:text-white ml-4">
+                  Edit Message
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            {/* Copy Button */}
+            <TouchableOpacity 
+              onPress={handleCopyAll}
+              className="flex-row items-center py-4 border-b border-neutral-100 dark:border-neutral-900 active:opacity-60"
+            >
+              <Copy color={isDark ? '#FFF' : '#000'} size={18} />
+              <Text className="text-base font-semibold text-neutral-900 dark:text-white ml-4">
+                Copy Text
+              </Text>
+            </TouchableOpacity>
+
+            {/* TTS Button */}
+            {message.content ? (
+              <TouchableOpacity 
+                onPress={handleTTS}
+                className="flex-row items-center py-4 border-b border-neutral-100 dark:border-neutral-900 active:opacity-60"
+              >
+                <Volume2 color={isSpeaking ? '#EF4444' : (isDark ? '#FFF' : '#000')} size={18} />
+                <Text className={`text-base font-semibold ml-4 ${
+                  isSpeaking ? 'text-red-500' : 'text-neutral-900 dark:text-white'
+                }`}>
+                  {isSpeaking ? 'Stop Reading' : 'Read Aloud'}
+                </Text>
+              </TouchableOpacity>
+            ) : null}
+
+            {/* Share Message Button */}
+            {message.content ? (
+              <TouchableOpacity 
+                onPress={handleShare}
+                className="flex-row items-center py-4 border-b border-neutral-100 dark:border-neutral-900 active:opacity-60"
+              >
+                <Share2 color={isDark ? '#FFF' : '#000'} size={18} />
+                <Text className="text-base font-semibold text-neutral-900 dark:text-white ml-4">
+                  Share Message
+                </Text>
+              </TouchableOpacity>
+            ) : null}
+
+            {/* Delete Button */}
+            <TouchableOpacity 
+              onPress={() => {
+                setIsMenuOpen(false);
+                onDelete?.();
+              }}
+              className="flex-row items-center py-4 active:opacity-60"
+            >
+              <Trash2 color="#EF4444" size={18} />
+              <Text className="text-base font-semibold text-red-500 ml-4">
+                Delete Message
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Edit User Message Modal */}
+      <Modal
+        visible={isEditOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsEditOpen(false)}
+      >
+        <View className="flex-1 items-center justify-center bg-black/50 px-6">
+          <View className="w-full max-w-sm bg-white dark:bg-[#171717] rounded-3xl p-6 border border-neutral-100 dark:border-neutral-800">
+            <Text className="text-lg font-bold text-neutral-900 dark:text-white mb-4">
+              Edit Message
+            </Text>
+            <TextInput
+              value={editText}
+              onChangeText={setEditText}
+              placeholder="Edit your message..."
+              placeholderTextColor="#737373"
+              multiline
+              autoFocus
+              className="w-full min-h-[100px] px-4 py-3 bg-neutral-50 dark:bg-neutral-900 text-neutral-950 dark:text-neutral-50 rounded-xl border border-neutral-200 dark:border-neutral-800 mb-6"
+              style={{ textAlignVertical: 'top' }}
+            />
+            <View className="flex-row justify-end gap-3">
+              <TouchableOpacity
+                onPress={() => setIsEditOpen(false)}
+                className="px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800"
+              >
+                <Text className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => {
+                  if (editText.trim()) {
+                    onEdit?.(message.id, editText.trim());
+                  }
+                  setIsEditOpen(false);
+                }}
+                className="px-4 py-2.5 rounded-xl bg-black dark:bg-white"
+              >
+                <Text className="text-sm font-medium text-white dark:text-black">Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
