@@ -1,33 +1,45 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, LayoutAnimation, Platform, UIManager } from 'react-native';
-import { Image } from 'expo-image';
-import { ChevronDown, ChevronRight, Brain } from 'lucide-react-native';
-import { Message } from '@/store/useChatStore';
-
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
+import { Message } from "@/store/useChatStore";
+import { Image } from "expo-image";
+import { Brain, ChevronDown, ChevronRight } from "lucide-react-native";
+import { useState } from "react";
+import { Animated, Text, TouchableOpacity, View } from "react-native";
 
 interface MessageItemProps {
   message: Message;
 }
 
 export default function MessageItem({ message }: MessageItemProps) {
-  const isUser = message.role === 'user';
+  const isUser = message.role === "user";
   const [thinkingExpanded, setThinkingExpanded] = useState(true);
+  const fadeAnim = useState(new Animated.Value(1))[0];
 
   const toggleThinking = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setThinkingExpanded((prev) => !prev);
+    const newValue = !thinkingExpanded;
+    if (newValue) {
+      setThinkingExpanded(true);
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start(() => {
+        setThinkingExpanded(false);
+      });
+    }
   };
 
   return (
-    <View className={`px-4 py-2 ${isUser ? 'items-end' : 'items-start'}`}>
+    <View className={`px-4 py-2 ${isUser ? "items-end" : "items-start"}`}>
       <View
         className={`max-w-[85%] rounded-2xl px-4 py-3 ${
           isUser
-            ? 'bg-black dark:bg-white'
-            : 'bg-neutral-100 dark:bg-neutral-800'
+            ? "bg-black dark:bg-white"
+            : "bg-neutral-100 dark:bg-neutral-800"
         }`}
       >
         {message.imageBase64 && (
@@ -46,7 +58,9 @@ export default function MessageItem({ message }: MessageItemProps) {
               className="flex-row items-center py-1"
             >
               <Brain
-                color={isUser ? (thinkingExpanded ? '#fff' : '#aaa') : '#737373'}
+                color={
+                  isUser ? (thinkingExpanded ? "#fff" : "#aaa") : "#737373"
+                }
                 size={14}
               />
               <Text className="text-xs text-neutral-500 dark:text-neutral-400 ml-1.5 font-medium">
@@ -60,11 +74,14 @@ export default function MessageItem({ message }: MessageItemProps) {
             </TouchableOpacity>
 
             {thinkingExpanded && (
-              <View className="border-l-2 border-neutral-300 dark:border-neutral-600 pl-3 mt-1 mb-1">
+              <Animated.View
+                style={{ opacity: fadeAnim }}
+                className="border-l-2 border-neutral-300 dark:border-neutral-600 pl-3 mt-1 mb-1"
+              >
                 <Text className="text-xs text-neutral-500 dark:text-neutral-400 leading-5">
                   {message.thinking}
                 </Text>
-              </View>
+              </Animated.View>
             )}
           </View>
         )}
@@ -73,8 +90,8 @@ export default function MessageItem({ message }: MessageItemProps) {
           <Text
             className={`text-[15px] leading-6 ${
               isUser
-                ? 'text-white dark:text-black'
-                : 'text-neutral-900 dark:text-neutral-100'
+                ? "text-white dark:text-black"
+                : "text-neutral-900 dark:text-neutral-100"
             }`}
           >
             {message.content}

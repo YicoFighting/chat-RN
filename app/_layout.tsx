@@ -21,7 +21,9 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    if (error) throw error;
+    if (error) {
+      console.warn('Font loading error:', error);
+    }
   }, [error]);
 
   useEffect(() => {
@@ -30,7 +32,7 @@ export default function RootLayout() {
     }
   }, [loaded]);
 
-  if (!loaded) {
+  if (!loaded && !error) {
     return null;
   }
 

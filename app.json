@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "my-chat-app",
+    "name": "chatMe",
     "slug": "my-chat-app",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -36,7 +36,17 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      "expo-image"
+      "expo-image",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35,
+            "buildToolsVersion": "35.0.0"
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

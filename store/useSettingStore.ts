@@ -1,6 +1,6 @@
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import { Platform } from 'react-native';
+import { Platform } from "react-native";
+import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
 
 let mmkvStorage: {
   setItem: (name: string, value: string) => void;
@@ -8,14 +8,28 @@ let mmkvStorage: {
   removeItem: (name: string) => void;
 };
 
-if (Platform.OS !== 'web') {
-  const { MMKV } = require('react-native-mmkv');
-  const storage = new MMKV();
-  mmkvStorage = {
-    setItem: (name: string, value: string) => storage.set(name, value),
-    getItem: (name: string) => storage.getString(name) ?? null,
-    removeItem: (name: string) => storage.delete(name),
-  };
+if (Platform.OS !== "web") {
+  try {
+    const { MMKV } = require("react-native-mmkv");
+    const storage = new MMKV();
+    mmkvStorage = {
+      setItem: (name: string, value: string) => storage.set(name, value),
+      getItem: (name: string) => storage.getString(name) ?? null,
+      removeItem: (name: string) => storage.delete(name),
+    };
+  } catch {
+    // Fallback to in-memory storage if MMKV fails to load
+    const memoryStore: Record<string, string> = {};
+    mmkvStorage = {
+      setItem: (name: string, value: string) => {
+        memoryStore[name] = value;
+      },
+      getItem: (name: string) => memoryStore[name] ?? null,
+      removeItem: (name: string) => {
+        delete memoryStore[name];
+      },
+    };
+  }
 } else {
   mmkvStorage = {
     setItem: (name: string, value: string) => {
@@ -38,28 +52,29 @@ if (Platform.OS !== 'web') {
   };
 }
 
-export type Provider = 'openai' | 'anthropic' | 'deepseek' | 'custom';
+export type Provider = "openai" | "anthropic" | "deepseek" | "custom";
 
 export interface SettingState {
   provider: Provider;
   baseUrl: string;
   apiKey: string;
   model: string;
-  setSettings: (settings: Partial<Omit<SettingState, 'setSettings'>>) => void;
+  setSettings: (settings: Partial<Omit<SettingState, "setSettings">>) => void;
 }
 
 export const useSettingStore = create<SettingState>()(
   persist(
     (set) => ({
-      provider: 'openai',
-      baseUrl: 'https://api.openai.com/v1',
-      apiKey: '',
-      model: 'gpt-4o',
-      setSettings: (newSettings) => set((state) => ({ ...state, ...newSettings })),
+      provider: "openai",
+      baseUrl: "https://api.openai.com/v1",
+      apiKey: "",
+      model: "gpt-4o",
+      setSettings: (newSettings) =>
+        set((state) => ({ ...state, ...newSettings })),
     }),
     {
-      name: 'app-settings',
+      name: "app-settings",
       storage: createJSONStorage(() => mmkvStorage),
-    }
-  )
+    },
+  ),
 );
