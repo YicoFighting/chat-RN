@@ -62,8 +62,8 @@ export default function MessageInput({ onSend, disabled, isStreaming, onStop }: 
       }
 
       await AudioModule.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
+        allowsRecording: true,
+        playsInSilentMode: true,
       });
 
       audioRecorder.record();

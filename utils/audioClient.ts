@@ -6,6 +6,7 @@ export interface TranscribeOptions {
 
 export async function transcribeAudio(options: TranscribeOptions): Promise<string> {
   const { baseUrl, apiKey, uri } = options;
+  const cleanApiKey = apiKey.replace(/\r?\n|\r/g, '').trim();
 
   // Normalize API Endpoint URL
   let url = baseUrl.replace(/\/$/, '');
@@ -28,7 +29,7 @@ export async function transcribeAudio(options: TranscribeOptions): Promise<strin
   formData.append('model', 'whisper-1');
 
   const headers: Record<string, string> = {
-    'Authorization': `Bearer ${apiKey}`,
+    'Authorization': `Bearer ${cleanApiKey}`,
   };
 
   const response = await fetch(url, {

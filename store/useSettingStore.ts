@@ -76,7 +76,16 @@ export const useSettingStore = create<SettingState>()(
       temperature: 0.7,
       maxTokens: 2048,
       setSettings: (newSettings) =>
-        set((state) => ({ ...state, ...newSettings })),
+        set((state) => {
+          const processed = { ...newSettings };
+          if (typeof processed.apiKey === 'string') {
+            processed.apiKey = processed.apiKey.replace(/\r?\n|\r/g, '').trim();
+          }
+          if (typeof processed.baseUrl === 'string') {
+            processed.baseUrl = processed.baseUrl.trim();
+          }
+          return { ...state, ...processed };
+        }),
     }),
     {
       name: "app-settings",

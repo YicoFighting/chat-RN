@@ -63,6 +63,7 @@ export async function streamChat(
   onError: (error: Error) => void = () => {}
 ) {
   const { provider, baseUrl, apiKey, model } = options;
+  const cleanApiKey = apiKey.replace(/\r?\n|\r/g, '').trim();
   const messages = buildMessages(history, userText, imagesBase64);
 
   const isOfficialAnthropic = provider === 'anthropic' && (baseUrl.includes('api.anthropic.com') || !baseUrl.trim());
@@ -75,13 +76,13 @@ export async function streamChat(
   };
 
   if (provider === 'anthropic') {
-    headers['x-api-key'] = apiKey;
+    headers['x-api-key'] = cleanApiKey;
     headers['anthropic-version'] = '2023-06-01';
     if (isOfficialAnthropic) {
       headers['anthropic-dangerously-allow-browser'] = 'true';
     }
   } else {
-    headers['Authorization'] = `Bearer ${apiKey}`;
+    headers['Authorization'] = `Bearer ${cleanApiKey}`;
   }
 
   let body = '';

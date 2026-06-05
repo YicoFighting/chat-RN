@@ -47,7 +47,8 @@ export default function SettingScreen() {
   };
 
   const handleTestConnection = async () => {
-    if (!apiKey.trim()) {
+    const cleanApiKey = apiKey.replace(/\r?\n|\r/g, '').trim();
+    if (!cleanApiKey) {
       setTestResult({ success: false, message: 'Please enter API Key first.' });
       return;
     }
@@ -65,13 +66,13 @@ export default function SettingScreen() {
     };
 
     if (provider === 'anthropic') {
-      headers['x-api-key'] = apiKey;
+      headers['x-api-key'] = cleanApiKey;
       headers['anthropic-version'] = '2023-06-01';
       if (isOfficialAnthropic) {
         headers['anthropic-dangerously-allow-browser'] = 'true';
       }
     } else {
-      headers['Authorization'] = `Bearer ${apiKey}`;
+      headers['Authorization'] = `Bearer ${cleanApiKey}`;
     }
 
     try {
