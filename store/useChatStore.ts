@@ -1,6 +1,6 @@
-import { Platform } from 'react-native';
-import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
+import { Platform } from "react-native";
+import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
 
 let mmkvStorage: {
   setItem: (name: string, value: string) => void;
@@ -8,9 +8,9 @@ let mmkvStorage: {
   removeItem: (name: string) => void;
 };
 
-if (Platform.OS !== 'web') {
+if (Platform.OS !== "web") {
   try {
-    const { MMKV } = require('react-native-mmkv');
+    const { MMKV } = require("react-native-mmkv");
     const storage = new MMKV();
     mmkvStorage = {
       setItem: (name: string, value: string) => storage.set(name, value),
@@ -53,10 +53,11 @@ if (Platform.OS !== 'web') {
 
 export interface Message {
   id: string;
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string;
   thinking?: string;
   imagesBase64?: string[];
+  imagesUri?: string[];
   createdAt: number;
 }
 
@@ -73,7 +74,7 @@ export interface ChatState {
   messages: Message[];
   isStreaming: boolean;
   abortController: AbortController | null;
-  
+
   createSession: (title?: string) => string;
   deleteSession: (id: string) => void;
   renameSession: (id: string, title: string) => void;
@@ -91,10 +92,10 @@ export interface ChatState {
   clearMessages: () => void;
 }
 
-const defaultSessionId = 'default';
+const defaultSessionId = "default";
 const defaultSession: ChatSession = {
   id: defaultSessionId,
-  title: 'Default Chat',
+  title: "Default Chat",
   messages: [],
   createdAt: Date.now(),
 };
@@ -114,7 +115,7 @@ export const useChatStore = create<ChatState>()(
         const id = Date.now().toString();
         const newSession: ChatSession = {
           id,
-          title: title || 'New Chat',
+          title: title || "New Chat",
           messages: [],
           createdAt: Date.now(),
         };
@@ -130,16 +131,17 @@ export const useChatStore = create<ChatState>()(
         set((state) => {
           const updatedSessions = state.sessions.filter((s) => s.id !== id);
           let nextSessionId = state.currentSessionId;
-          
+
           if (state.currentSessionId === id) {
-            nextSessionId = updatedSessions.length > 0 ? updatedSessions[0].id : null;
+            nextSessionId =
+              updatedSessions.length > 0 ? updatedSessions[0].id : null;
           }
 
           if (updatedSessions.length === 0) {
             const newId = Date.now().toString();
             const newSession: ChatSession = {
               id: newId,
-              title: 'New Chat',
+              title: "New Chat",
               messages: [],
               createdAt: Date.now(),
             };
@@ -150,7 +152,9 @@ export const useChatStore = create<ChatState>()(
             };
           }
 
-          const nextSession = updatedSessions.find((s) => s.id === nextSessionId);
+          const nextSession = updatedSessions.find(
+            (s) => s.id === nextSessionId,
+          );
           return {
             sessions: updatedSessions,
             currentSessionId: nextSessionId,
@@ -161,7 +165,7 @@ export const useChatStore = create<ChatState>()(
       renameSession: (id, title) =>
         set((state) => ({
           sessions: state.sessions.map((s) =>
-            s.id === id ? { ...s, title } : s
+            s.id === id ? { ...s, title } : s,
           ),
         })),
 
@@ -178,7 +182,7 @@ export const useChatStore = create<ChatState>()(
         const id = Date.now().toString();
         const newSession: ChatSession = {
           id,
-          title: 'New Chat',
+          title: "New Chat",
           messages: [],
           createdAt: Date.now(),
         };
@@ -193,12 +197,15 @@ export const useChatStore = create<ChatState>()(
         set((state) => {
           let activeId = state.currentSessionId;
           let sessions = [...state.sessions];
-          
+
           if (!activeId) {
             activeId = Date.now().toString();
             const newSession: ChatSession = {
               id: activeId,
-              title: message.role === 'user' ? (message.content.slice(0, 20) || 'New Chat') : 'New Chat',
+              title:
+                message.role === "user"
+                  ? message.content.slice(0, 20) || "New Chat"
+                  : "New Chat",
               messages: [],
               createdAt: Date.now(),
             };
@@ -209,11 +216,11 @@ export const useChatStore = create<ChatState>()(
             if (s.id === activeId) {
               let newTitle = s.title;
               if (
-                message.role === 'user' &&
+                message.role === "user" &&
                 s.messages.length === 0 &&
-                (s.title === 'New Chat' || s.title === 'Default Chat')
+                (s.title === "New Chat" || s.title === "Default Chat")
               ) {
-                newTitle = message.content.slice(0, 16) || 'New Chat';
+                newTitle = message.content.slice(0, 16) || "New Chat";
               }
               return {
                 ...s,
@@ -241,7 +248,7 @@ export const useChatStore = create<ChatState>()(
             if (s.id === activeId) {
               const msgs = [...s.messages];
               const lastMsg = msgs[msgs.length - 1];
-              if (lastMsg && lastMsg.role === 'assistant') {
+              if (lastMsg && lastMsg.role === "assistant") {
                 msgs[msgs.length - 1] = { ...lastMsg, content };
               }
               return { ...s, messages: msgs };
@@ -265,7 +272,7 @@ export const useChatStore = create<ChatState>()(
             if (s.id === activeId) {
               const msgs = [...s.messages];
               const lastMsg = msgs[msgs.length - 1];
-              if (lastMsg && lastMsg.role === 'assistant') {
+              if (lastMsg && lastMsg.role === "assistant") {
                 msgs[msgs.length - 1] = { ...lastMsg, thinking };
               }
               return { ...s, messages: msgs };
@@ -363,7 +370,7 @@ export const useChatStore = create<ChatState>()(
         }),
     }),
     {
-      name: 'chat-sessions',
+      name: "chat-sessions",
       storage: createJSONStorage(() => mmkvStorage),
       // 过滤只保存 sessions 和 currentSessionId
       partialize: (state) => ({
@@ -374,11 +381,11 @@ export const useChatStore = create<ChatState>()(
       onRehydrateStorage: () => (state) => {
         if (state) {
           const activeSession = state.sessions.find(
-            (s) => s.id === state.currentSessionId
+            (s) => s.id === state.currentSessionId,
           );
           state.messages = activeSession ? activeSession.messages : [];
         }
       },
-    }
-  )
+    },
+  ),
 );
