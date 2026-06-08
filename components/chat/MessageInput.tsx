@@ -21,7 +21,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const TAB_BAR_HEIGHT = 60;
+
 
 interface MessageInputProps {
   onSend: (
@@ -317,8 +317,8 @@ export default function MessageInput({
             ? 8
             : Math.max(insets.bottom, 8)
           : Platform.OS === "android"
-            ? TAB_BAR_HEIGHT + Math.max(insets.bottom, 8)
-            : Math.max(insets.bottom, 12),
+            ? 4
+            : Math.max(insets.bottom, 4),
       }}
       className="px-4 pt-2 bg-white dark:bg-[#0D0D0D]"
     >

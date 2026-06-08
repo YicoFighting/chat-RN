@@ -262,25 +262,37 @@ export default function SettingScreen() {
           </View>
         </View>
 
-        {/* Max Tokens Stepper */}
+        {/* Max Tokens Input with Stepper */}
         <View className="mb-6">
           <Text className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-2">
-            Max Tokens: {maxTokens || '2048'}
+            Max Tokens
           </Text>
           <View className="flex-row items-center justify-between bg-neutral-50 dark:bg-[#171717] rounded-xl border border-neutral-200 dark:border-neutral-800 p-2">
             <TouchableOpacity
-              onPress={() => setSettings({ maxTokens: Math.max(256, maxTokens - 256) })}
+              onPress={() => setSettings({ maxTokens: Math.max(1, maxTokens - 256) })}
               className="w-10 h-10 bg-neutral-200 dark:bg-neutral-800 rounded-lg items-center justify-center active:opacity-60"
             >
               <Text className="text-lg font-bold text-neutral-800 dark:text-neutral-200">-</Text>
             </TouchableOpacity>
             
-            <Text className="text-base font-semibold text-neutral-900 dark:text-white">
-              {maxTokens || '2048'}
-            </Text>
+            <TextInput
+              value={String(maxTokens)}
+              onChangeText={(text) => {
+                const cleaned = text.replace(/[^0-9]/g, '');
+                if (cleaned === '') {
+                  setSettings({ maxTokens: 1 });
+                } else {
+                  const num = parseInt(cleaned, 10);
+                  setSettings({ maxTokens: Math.min(999999, Math.max(1, num)) });
+                }
+              }}
+              keyboardType="number-pad"
+              className="flex-1 text-center text-base font-semibold text-neutral-900 dark:text-white mx-2 py-1"
+              selectTextOnFocus
+            />
 
             <TouchableOpacity
-              onPress={() => setSettings({ maxTokens: Math.min(8192, maxTokens + 256) })}
+              onPress={() => setSettings({ maxTokens: Math.min(999999, maxTokens + 256) })}
               className="w-10 h-10 bg-neutral-200 dark:bg-neutral-800 rounded-lg items-center justify-center active:opacity-60"
             >
               <Text className="text-lg font-bold text-neutral-800 dark:text-neutral-200">+</Text>

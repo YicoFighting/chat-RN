@@ -17,6 +17,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import {
     Animated,
+    Dimensions,
     Modal,
     Platform,
     ScrollView,
@@ -177,6 +178,9 @@ export default function MessageItem({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editText, setEditText] = useState(message.content || "");
+
+  // Image preview state
+  const [previewImageUri, setPreviewImageUri] = useState<string | null>(null);
 
   useEffect(() => {
     return () => {
@@ -362,29 +366,37 @@ export default function MessageItem({
         }`}
       >
         {/* Multi-image preview grid/flex */}
-        {(message.imagesUri?.length || message.imagesBase64?.length) &&
+        {((message.imagesUri && message.imagesUri.length > 0) ||
+          (message.imagesBase64 && message.imagesBase64.length > 0)) &&
           (() => {
             const displayImages =
               message.imagesUri && message.imagesUri.length > 0
                 ? message.imagesUri.map((uri) => ({
                     source: { uri },
                     key: uri,
+                    previewUri: uri,
                   }))
                 : (message.imagesBase64 || []).map((b64, i) => ({
                     source: { uri: `data:image/jpeg;base64,${b64}` },
                     key: `b64-${i}`,
+                    previewUri: `data:image/jpeg;base64,${b64}`,
                   }));
             const isSingle = displayImages.length === 1;
             return (
               <View className="flex-row flex-wrap gap-2 mb-2">
                 {displayImages.map((img) => (
-                  <Image
+                  <TouchableOpacity
                     key={img.key}
-                    source={img.source}
-                    className={`${isSingle ? "w-48 h-48" : "w-24 h-24"} rounded-xl`}
-                    contentFit="cover"
-                    transition={200}
-                  />
+                    activeOpacity={0.8}
+                    onPress={() => setPreviewImageUri(img.previewUri)}
+                  >
+                    <Image
+                      source={img.source}
+                      className={`${isSingle ? "w-48 h-48" : "w-24 h-24"} rounded-xl`}
+                      contentFit="cover"
+                      transition={200}
+                    />
+                  </TouchableOpacity>
                 ))}
               </View>
             );
@@ -602,6 +614,35 @@ export default function MessageItem({
             </View>
           </View>
         </View>
+      </Modal>
+
+      {/* Full-screen Image Preview Modal */}
+      <Modal
+        visible={!!previewImageUri}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPreviewImageUri(null)}
+      >
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => setPreviewImageUri(null)}
+          className="flex-1 bg-black/90 items-center justify-center"
+        >
+          {previewImageUri && (
+            <Image
+              source={{ uri: previewImageUri }}
+              style={{
+                width: Dimensions.get("window").width - 32,
+                height: Dimensions.get("window").height * 0.7,
+              }}
+              contentFit="contain"
+              transition={200}
+            />
+          )}
+          <Text className="text-white/60 text-sm mt-6 font-medium">
+            点击任意位置关闭
+          </Text>
+        </TouchableOpacity>
       </Modal>
     </View>
   );

@@ -74,7 +74,7 @@ export const useSettingStore = create<SettingState>()(
       model: "mimo-v2.5",
       systemPrompt: "",
       temperature: 0.7,
-      maxTokens: 1000000,
+      maxTokens: 128 * 1024, // 128k
       setSettings: (newSettings) =>
         set((state) => {
           const processed = { ...newSettings };
