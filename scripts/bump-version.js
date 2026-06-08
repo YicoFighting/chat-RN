@@ -3,7 +3,13 @@ const path = require("path");
 const { execSync } = require("child_process");
 
 const appJsonPath = path.join(__dirname, "..", "app.json");
-const buildGradlePath = path.join(__dirname, "..", "android", "app", "build.gradle");
+const buildGradlePath = path.join(
+  __dirname,
+  "..",
+  "android",
+  "app",
+  "build.gradle",
+);
 
 // Read current version from app.json
 const appJson = JSON.parse(fs.readFileSync(appJsonPath, "utf8"));
@@ -39,17 +45,21 @@ if (fs.existsSync(buildGradlePath)) {
   const newVersionCode = newMajor * 100 + newMinor * 10 + newPatch;
   gradleContent = gradleContent.replace(
     /versionCode \d+/,
-    `versionCode ${newVersionCode}`
+    `versionCode ${newVersionCode}`,
   );
   gradleContent = gradleContent.replace(
     /versionName "[^"]+"/,
-    `versionName "${newVersion}"`
+    `versionName "${newVersion}"`,
   );
 
   fs.writeFileSync(buildGradlePath, gradleContent, "utf8");
-  console.log(`build.gradle: versionCode=${newVersionCode}, versionName="${newVersion}"`);
+  console.log(
+    `build.gradle: versionCode=${newVersionCode}, versionName="${newVersion}"`,
+  );
 } else {
-  console.log("build.gradle not found (run prebuild first), skipping gradle update");
+  console.log(
+    "build.gradle not found (run prebuild first), skipping gradle update",
+  );
 }
 
 // Git commit
