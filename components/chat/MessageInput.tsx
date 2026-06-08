@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Keyboard,
   Platform,
   ScrollView,
   Text,
@@ -60,8 +61,21 @@ export default function MessageInput({
   const [cameraPermission, requestCameraPermission] =
     ImagePicker.useCameraPermissions();
 
+  // Keyboard visibility tracking
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
   useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
+      () => setIsKeyboardVisible(true),
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
+      () => setIsKeyboardVisible(false),
+    );
     return () => {
+      showSub.remove();
+      hideSub.remove();
       if (recordingTimerRef.current) {
         clearInterval(recordingTimerRef.current);
       }
@@ -298,8 +312,11 @@ export default function MessageInput({
   return (
     <View
       style={{
-        paddingBottom:
-          Platform.OS === "android"
+        paddingBottom: isKeyboardVisible
+          ? Platform.OS === "android"
+            ? 8
+            : Math.max(insets.bottom, 8)
+          : Platform.OS === "android"
             ? TAB_BAR_HEIGHT + Math.max(insets.bottom, 8)
             : Math.max(insets.bottom, 12),
       }}
