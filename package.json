@@ -54,6 +54,7 @@
     "build:android": "build-release.bat",
     "build:android:debug": "npx expo prebuild --platform android && cd android && gradlew.bat assembleDebug",
     "build:android:eas": "eas build --platform android",
+    "build:android:dev": "eas build --platform android --profile development",
     "build:ios:eas": "eas build --platform ios",
     "build:all:eas": "eas build --platform all"
   },
