@@ -12,6 +12,7 @@ import {
     Trash2,
 } from "lucide-react-native";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
     ActivityIndicator,
     Alert,
@@ -29,6 +30,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ChatScreen() {
+  const { t } = useTranslation();
   const {
     messages,
     sessions,
@@ -104,7 +106,7 @@ export default function ChatScreen() {
         addMessage({
           id: Date.now().toString(),
           role: "assistant",
-          content: "Please configure your API Key in Settings first.",
+          content: t('errors.noApiKey'),
           createdAt: Date.now(),
         });
         return;
@@ -189,7 +191,7 @@ export default function ChatScreen() {
             error.name === "AbortError" ||
             error.message.includes("aborted")
           ) {
-            updateLastAssistantMessage(accumulated + " \n\n*_[生成已中止]_*");
+            updateLastAssistantMessage(accumulated + " \n\n" + t('errors.generateAborted'));
           } else {
             updateLastAssistantMessage(`Error: ${error.message}`);
           }
@@ -279,7 +281,7 @@ export default function ChatScreen() {
       },
       (error) => {
         if (error.name === "AbortError" || error.message.includes("aborted")) {
-          updateLastAssistantMessage(accumulated + " \n\n*_[生成已中止]_*");
+          updateLastAssistantMessage(accumulated + " \n\n" + t('errors.generateAborted'));
         } else {
           updateLastAssistantMessage(`Error: ${error.message}`);
         }
@@ -366,7 +368,7 @@ export default function ChatScreen() {
             error.name === "AbortError" ||
             error.message.includes("aborted")
           ) {
-            updateLastAssistantMessage(accumulated + " \n\n*_[生成已中止]_*");
+            updateLastAssistantMessage(accumulated + " \n\n" + t('errors.generateAborted'));
           } else {
             updateLastAssistantMessage(`Error: ${error.message}`);
           }
@@ -395,16 +397,16 @@ export default function ChatScreen() {
     let confirmed = false;
     if (Platform.OS === "web") {
       confirmed = window.confirm(
-        "Are you sure you want to clear all chat sessions?",
+        t('chat.confirmClearAll'),
       );
     } else {
       await new Promise<void>((resolve) => {
         Alert.alert(
-          "Clear All Chats",
-          "Are you sure you want to delete all chat sessions? This cannot be undone.",
+          t('chat.clearAllChats'),
+          t('chat.confirmClearAll'),
           [
             {
-              text: "Cancel",
+              text: t('common.cancel'),
               onPress: () => {
                 confirmed = false;
                 resolve();
@@ -412,7 +414,7 @@ export default function ChatScreen() {
               style: "cancel",
             },
             {
-              text: "Delete All",
+              text: t('chat.deleteAll'),
               onPress: () => {
                 confirmed = true;
                 resolve();
@@ -432,15 +434,15 @@ export default function ChatScreen() {
   const handleDeleteSession = async (id: string, title: string) => {
     let confirmed = false;
     if (Platform.OS === "web") {
-      confirmed = window.confirm(`Are you sure you want to delete "${title}"?`);
+      confirmed = window.confirm(t('chat.confirmDeleteChat', { title }));
     } else {
       await new Promise<void>((resolve) => {
         Alert.alert(
-          "Delete Chat",
-          `Are you sure you want to delete "${title}"?`,
+          t('chat.deleteChat'),
+          t('chat.confirmDeleteChat', { title }),
           [
             {
-              text: "Cancel",
+              text: t('common.cancel'),
               onPress: () => {
                 confirmed = false;
                 resolve();
@@ -448,7 +450,7 @@ export default function ChatScreen() {
               style: "cancel",
             },
             {
-              text: "Delete",
+              text: t('common.delete'),
               onPress: () => {
                 confirmed = true;
                 resolve();
@@ -507,7 +509,7 @@ export default function ChatScreen() {
       <View className="flex-1 items-center justify-center pt-32">
         <MessageSquare color={isDark ? "#525252" : "#A3A3A3"} size={48} />
         <Text className="text-neutral-400 text-lg mt-4">
-          Start a conversation
+          {t('chat.startConversation')}
         </Text>
       </View>
     );
@@ -537,7 +539,7 @@ export default function ChatScreen() {
             numberOfLines={1}
             className="text-[15px] font-semibold text-neutral-900 dark:text-white mr-1.5"
           >
-            {currentSession?.title || "Chat"}
+            {currentSession?.title || t('common.chat')}
           </Text>
           <Edit2 color="#737373" size={12} />
         </TouchableOpacity>
@@ -620,7 +622,7 @@ export default function ChatScreen() {
               {/* Drawer Header */}
               <View className="flex-row items-center justify-between mb-6">
                 <Text className="text-xl font-bold text-neutral-900 dark:text-white">
-                  Chats
+                  {t('common.chats')}
                 </Text>
                 <TouchableOpacity
                   onPress={() => {
@@ -633,7 +635,7 @@ export default function ChatScreen() {
                 >
                   <Plus color={isDark ? "#000" : "#FFF"} size={14} />
                   <Text className="text-xs font-semibold text-white dark:text-black ml-1">
-                    New
+                    {t('common.new')}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -644,7 +646,7 @@ export default function ChatScreen() {
                 <TextInput
                   value={searchText}
                   onChangeText={setSearchText}
-                  placeholder="Search chats or messages..."
+                  placeholder={t('chat.searchChats')}
                   placeholderTextColor={isDark ? "#737373" : "#A3A3A3"}
                   className="flex-1 ml-2 text-sm text-neutral-900 dark:text-white p-0"
                   autoCapitalize="none"
@@ -653,7 +655,7 @@ export default function ChatScreen() {
                 {searchText.length > 0 && (
                   <TouchableOpacity onPress={() => setSearchText("")}>
                     <Text className="text-xs text-neutral-400 dark:text-neutral-500 font-medium px-1">
-                      Clear
+                      {t('common.clear')}
                     </Text>
                   </TouchableOpacity>
                 )}
@@ -667,7 +669,7 @@ export default function ChatScreen() {
                 {filteredSessions.length === 0 ? (
                   <View className="flex-1 items-center justify-center py-8">
                     <Text className="text-sm text-neutral-400 dark:text-neutral-500">
-                      No matching chats
+                      {t('chat.noMatchingChats')}
                     </Text>
                   </View>
                 ) : (
@@ -741,7 +743,7 @@ export default function ChatScreen() {
                 >
                   <Trash2 color="#EF4444" size={16} />
                   <Text className="text-red-500 font-semibold text-sm ml-3">
-                    Clear All Chats
+                    {t('chat.clearAllChats')}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -767,12 +769,12 @@ export default function ChatScreen() {
         <View className="flex-1 items-center justify-center bg-black/50 px-6">
           <View className="w-full max-w-sm bg-white dark:bg-[#171717] rounded-3xl p-6 border border-neutral-100 dark:border-neutral-800">
             <Text className="text-lg font-bold text-neutral-900 dark:text-white mb-4">
-              Rename Session
+              {t('chat.renameSession')}
             </Text>
             <TextInput
               value={renameText}
               onChangeText={setRenameText}
-              placeholder="Enter session name..."
+              placeholder={t('chat.enterSessionName')}
               placeholderTextColor="#737373"
               autoFocus
               className="w-full px-4 py-3 bg-neutral-50 dark:bg-neutral-900 text-neutral-950 dark:text-neutral-50 rounded-xl border border-neutral-200 dark:border-neutral-800 mb-6"
@@ -783,7 +785,7 @@ export default function ChatScreen() {
                 className="px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800"
               >
                 <Text className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                  Cancel
+                  {t('common.cancel')}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -791,7 +793,7 @@ export default function ChatScreen() {
                 className="px-4 py-2.5 rounded-xl bg-black dark:bg-white"
               >
                 <Text className="text-sm font-medium text-white dark:text-black">
-                  Save
+                  {t('common.save')}
                 </Text>
               </TouchableOpacity>
             </View>

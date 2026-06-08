@@ -1,3 +1,4 @@
+import i18n from "@/utils/i18n";
 import { Platform } from "react-native";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
@@ -53,6 +54,7 @@ if (Platform.OS !== "web") {
 }
 
 export type Provider = "openai" | "anthropic" | "deepseek" | "custom";
+export type Language = "en" | "zh";
 
 export interface SettingState {
   provider: Provider;
@@ -62,7 +64,9 @@ export interface SettingState {
   systemPrompt: string;
   temperature: number;
   maxTokens: number;
+  language: Language;
   setSettings: (settings: Partial<Omit<SettingState, "setSettings">>) => void;
+  setLanguage: (language: Language) => void;
 }
 
 export const useSettingStore = create<SettingState>()(
@@ -75,6 +79,7 @@ export const useSettingStore = create<SettingState>()(
       systemPrompt: "",
       temperature: 0.7,
       maxTokens: 128 * 1024, // 128k
+      language: "zh" as Language,
       setSettings: (newSettings) =>
         set((state) => {
           const processed = { ...newSettings };
@@ -86,10 +91,20 @@ export const useSettingStore = create<SettingState>()(
           }
           return { ...state, ...processed };
         }),
+      setLanguage: (language: Language) => {
+        set({ language });
+        i18n.changeLanguage(language);
+      },
     }),
     {
       name: "app-settings",
       storage: createJSONStorage(() => mmkvStorage),
+      onRehydrateStorage: () => (state) => {
+        // When storage is rehydrated, sync the language to i18n
+        if (state?.language) {
+          i18n.changeLanguage(state.language);
+        }
+      },
     },
   ),
 );

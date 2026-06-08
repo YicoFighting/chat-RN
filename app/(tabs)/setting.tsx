@@ -1,16 +1,22 @@
-import React, { useState } from 'react';
+import { Language, Provider, useSettingStore } from '@/store/useSettingStore';
+import { Globe } from 'lucide-react-native';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
-  View,
-  Text,
-  TextInput,
-  ScrollView,
-  TouchableOpacity,
-  ActivityIndicator,
-  useColorScheme,
+    ActivityIndicator,
+    ScrollView,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    useColorScheme,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useSettingStore, Provider } from '@/store/useSettingStore';
-import { Check } from 'lucide-react-native';
+
+const LANGUAGES: { key: Language; label: string; nativeLabel: string }[] = [
+  { key: 'zh', label: 'Chinese', nativeLabel: '中文' },
+  { key: 'en', label: 'English', nativeLabel: 'English' },
+];
 
 const PROVIDERS: { key: Provider; label: string; defaultUrl: string; defaultModel: string }[] = [
   { key: 'openai', label: 'OpenAI', defaultUrl: 'https://api.openai.com/v1', defaultModel: 'gpt-4o' },
@@ -27,7 +33,8 @@ const MODEL_PRESETS: Record<Provider, string[]> = {
 };
 
 export default function SettingScreen() {
-  const { provider, baseUrl, apiKey, model, systemPrompt, temperature, maxTokens, setSettings } = useSettingStore();
+  const { t } = useTranslation();
+  const { provider, baseUrl, apiKey, model, systemPrompt, temperature, maxTokens, language, setSettings, setLanguage } = useSettingStore();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
 
@@ -49,7 +56,7 @@ export default function SettingScreen() {
   const handleTestConnection = async () => {
     const cleanApiKey = apiKey.replace(/\r?\n|\r/g, '').trim();
     if (!cleanApiKey) {
-      setTestResult({ success: false, message: 'Please enter API Key first.' });
+      setTestResult({ success: false, message: t('setting.pleaseEnterApiKey') });
       return;
     }
     
@@ -87,7 +94,7 @@ export default function SettingScreen() {
       });
 
       if (response.ok) {
-        setTestResult({ success: true, message: 'Connection successful!' });
+        setTestResult({ success: true, message: t('setting.connectionSuccessful') });
       } else {
         const text = await response.text();
         setTestResult({ success: false, message: `HTTP ${response.status}: ${text.slice(0, 100)}` });
@@ -103,13 +110,49 @@ export default function SettingScreen() {
     <SafeAreaView className="flex-1 bg-white dark:bg-[#0D0D0D]" edges={['top']}>
       <ScrollView className="px-6 pt-8" showsVerticalScrollIndicator={false}>
         <Text className="text-2xl font-semibold mb-8 text-neutral-900 dark:text-white">
-          Settings
+          {t('common.settings')}
         </Text>
+
+        {/* Language Selection */}
+        <View className="mb-8">
+          <View className="flex-row items-center mb-3">
+            <Globe color={isDark ? '#A3A3A3' : '#737373'} size={16} />
+            <Text className="text-xs font-medium text-neutral-400 uppercase tracking-wider ml-2">
+              {t('setting.language')}
+            </Text>
+          </View>
+          <Text className="text-xs text-neutral-500 dark:text-neutral-400 mb-3">
+            {t('setting.languageDescription')}
+          </Text>
+          <View className="flex-row flex-wrap gap-2">
+            {LANGUAGES.map((lang) => (
+              <TouchableOpacity
+                key={lang.key}
+                onPress={() => setLanguage(lang.key)}
+                className={`px-4 py-2 rounded-xl border ${
+                  language === lang.key
+                    ? 'border-black dark:border-white bg-black dark:bg-white'
+                    : 'border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-[#171717]'
+                }`}
+              >
+                <Text
+                  className={`text-sm font-medium ${
+                    language === lang.key
+                      ? 'text-white dark:text-black'
+                      : 'text-neutral-700 dark:text-neutral-300'
+                  }`}
+                >
+                  {lang.nativeLabel}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
 
         {/* Provider Selection */}
         <View className="mb-8">
           <Text className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-3">
-            Provider
+            {t('setting.provider')}
           </Text>
           <View className="flex-row flex-wrap gap-2">
             {PROVIDERS.map((p) => (
@@ -129,7 +172,7 @@ export default function SettingScreen() {
                       : 'text-neutral-700 dark:text-neutral-300'
                   }`}
                 >
-                  {p.label}
+                  {t(`setting.${p.key}`)}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -139,7 +182,7 @@ export default function SettingScreen() {
         {/* API Base URL */}
         <View className="mb-6">
           <Text className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-2">
-            API Base URL
+            {t('setting.apiBaseUrl')}
           </Text>
           <TextInput
             value={baseUrl}
@@ -155,7 +198,7 @@ export default function SettingScreen() {
         {/* API Key */}
         <View className="mb-6">
           <Text className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-2">
-            API Key
+            {t('setting.apiKey')}
           </Text>
           <TextInput
             value={apiKey}
@@ -173,7 +216,7 @@ export default function SettingScreen() {
         {provider !== 'custom' && MODEL_PRESETS[provider]?.length > 0 && (
           <View className="mb-4">
             <Text className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider mb-2">
-              Model Presets
+              {t('setting.modelPresets')}
             </Text>
             <View className="flex-row flex-wrap gap-2">
               {MODEL_PRESETS[provider].map((presetModel) => {
@@ -207,7 +250,7 @@ export default function SettingScreen() {
         {/* Model */}
         <View className="mb-6">
           <Text className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-2">
-            Model Identifier
+            {t('setting.modelIdentifier')}
           </Text>
           <TextInput
             value={model}
@@ -223,7 +266,7 @@ export default function SettingScreen() {
         {/* System Prompt */}
         <View className="mb-6">
           <Text className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-2">
-            System Prompt
+            {t('setting.systemPrompt')}
           </Text>
           <TextInput
             value={systemPrompt}
@@ -239,7 +282,7 @@ export default function SettingScreen() {
         {/* Temperature Stepper */}
         <View className="mb-6">
           <Text className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-2">
-            Temperature: {temperature?.toFixed(1) || '0.7'}
+            {t('setting.temperature')}: {temperature?.toFixed(1) || '0.7'}
           </Text>
           <View className="flex-row items-center justify-between bg-neutral-50 dark:bg-[#171717] rounded-xl border border-neutral-200 dark:border-neutral-800 p-2">
             <TouchableOpacity
@@ -265,7 +308,7 @@ export default function SettingScreen() {
         {/* Max Tokens Input with Stepper */}
         <View className="mb-6">
           <Text className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-2">
-            Max Tokens
+            {t('setting.maxTokens')}
           </Text>
           <View className="flex-row items-center justify-between bg-neutral-50 dark:bg-[#171717] rounded-xl border border-neutral-200 dark:border-neutral-800 p-2">
             <TouchableOpacity
@@ -311,7 +354,7 @@ export default function SettingScreen() {
               <ActivityIndicator color={isDark ? '#000' : '#FFF'} size="small" />
             ) : (
               <Text className="text-white dark:text-black font-semibold text-sm">
-                Test Connection
+                {t('setting.testConnection')}
               </Text>
             )}
           </TouchableOpacity>
@@ -334,7 +377,7 @@ export default function SettingScreen() {
         {/* Info */}
         <View className="mt-2 mb-12 p-4 rounded-xl bg-neutral-50 dark:bg-[#171717] border border-neutral-200 dark:border-neutral-800">
           <Text className="text-xs text-neutral-500 dark:text-neutral-400 leading-5">
-            Your API Key is stored locally on your device and is only used to communicate with the API provider you select. It is never sent to any third-party service.
+            {t('setting.apiInfo')}
           </Text>
         </View>
       </ScrollView>

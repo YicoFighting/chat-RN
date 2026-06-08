@@ -3,31 +3,32 @@ import * as Clipboard from "expo-clipboard";
 import { Image } from "expo-image";
 import * as Speech from "expo-speech";
 import {
-    Brain,
-    Check,
-    ChevronDown,
-    ChevronRight,
-    Copy,
-    Edit3,
-    RotateCcw,
-    Share2,
-    Trash2,
-    Volume2,
+  Brain,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  Copy,
+  Edit3,
+  RotateCcw,
+  Share2,
+  Trash2,
+  Volume2,
 } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from 'react-i18next';
 import {
-    Animated,
-    Dimensions,
-    Modal,
-    Platform,
-    ScrollView,
-    Share,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    useColorScheme,
-    Vibration,
-    View,
+  Animated,
+  Dimensions,
+  Modal,
+  Platform,
+  ScrollView,
+  Share,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  useColorScheme,
+  Vibration,
+  View,
 } from "react-native";
 import Markdown from "react-native-markdown-display";
 
@@ -47,6 +48,7 @@ interface CodeBlockProps {
 }
 
 function CodeBlock({ code, language, isDark }: CodeBlockProps) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -62,7 +64,7 @@ function CodeBlock({ code, language, isDark }: CodeBlockProps) {
       {/* Header bar */}
       <View className="flex-row items-center justify-between px-4 py-2 bg-neutral-800 dark:bg-[#1A1A1A] border-b border-neutral-700 dark:border-neutral-800">
         <Text className="text-xs font-semibold text-neutral-400 uppercase">
-          {language || "code"}
+          {language || t('common.code')}
         </Text>
         <TouchableOpacity
           onPress={handleCopy}
@@ -72,14 +74,14 @@ function CodeBlock({ code, language, isDark }: CodeBlockProps) {
             <>
               <Check color="#22C55E" size={12} />
               <Text className="text-xs text-green-500 font-medium ml-1.5">
-                Copied
+                {t('common.copied')}
               </Text>
             </>
           ) : (
             <>
               <Copy color="#A3A3A3" size={12} />
               <Text className="text-xs text-neutral-300 font-medium ml-1.5">
-                Copy
+                {t('common.copy')}
               </Text>
             </>
           )}
@@ -113,6 +115,7 @@ export default function MessageItem({
   onEdit,
   disabled,
 }: MessageItemProps) {
+  const { t } = useTranslation();
   const isUser = message.role === "user";
   const [thinkingExpanded, setThinkingExpanded] = useState(true);
   const fadeAnim = useState(new Animated.Value(1))[0];
@@ -416,7 +419,7 @@ export default function MessageItem({
                 size={14}
               />
               <Text className="text-xs text-neutral-500 dark:text-neutral-400 ml-1.5 font-medium">
-                Thinking
+                {t('common.thinking')}
               </Text>
               {thinkingExpanded ? (
                 <ChevronDown color="#737373" size={14} className="ml-1" />
@@ -462,7 +465,7 @@ export default function MessageItem({
           >
             <RotateCcw color={isDark ? "#FFF" : "#737373"} size={12} />
             <Text className="text-xs font-semibold text-neutral-600 dark:text-neutral-300 ml-1.5">
-              Regenerate
+              {t('common.regenerate')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -485,7 +488,7 @@ export default function MessageItem({
             <View className="w-12 h-1.5 bg-neutral-200 dark:bg-neutral-800 rounded-full mb-6 mx-auto" />
 
             <Text className="text-xs font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider mb-4">
-              Options
+              {t('common.options')}
             </Text>
 
             {/* Edit Message (User Only) */}
@@ -499,7 +502,7 @@ export default function MessageItem({
               >
                 <Edit3 color={isDark ? "#FFF" : "#000"} size={18} />
                 <Text className="text-base font-semibold text-neutral-900 dark:text-white ml-4">
-                  Edit Message
+                  {t('common.editMessage')}
                 </Text>
               </TouchableOpacity>
             )}
@@ -511,7 +514,7 @@ export default function MessageItem({
             >
               <Copy color={isDark ? "#FFF" : "#000"} size={18} />
               <Text className="text-base font-semibold text-neutral-900 dark:text-white ml-4">
-                Copy Text
+                {t('common.copyText')}
               </Text>
             </TouchableOpacity>
 
@@ -532,7 +535,7 @@ export default function MessageItem({
                       : "text-neutral-900 dark:text-white"
                   }`}
                 >
-                  {isSpeaking ? "Stop Reading" : "Read Aloud"}
+                  {isSpeaking ? t('common.stopReading') : t('common.readAloud')}
                 </Text>
               </TouchableOpacity>
             ) : null}
@@ -545,7 +548,7 @@ export default function MessageItem({
               >
                 <Share2 color={isDark ? "#FFF" : "#000"} size={18} />
                 <Text className="text-base font-semibold text-neutral-900 dark:text-white ml-4">
-                  Share Message
+                  {t('common.shareMessage')}
                 </Text>
               </TouchableOpacity>
             ) : null}
@@ -560,7 +563,7 @@ export default function MessageItem({
             >
               <Trash2 color="#EF4444" size={18} />
               <Text className="text-base font-semibold text-red-500 ml-4">
-                Delete Message
+                {t('common.deleteMessage')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -577,12 +580,12 @@ export default function MessageItem({
         <View className="flex-1 items-center justify-center bg-black/50 px-6">
           <View className="w-full max-w-sm bg-white dark:bg-[#171717] rounded-3xl p-6 border border-neutral-100 dark:border-neutral-800">
             <Text className="text-lg font-bold text-neutral-900 dark:text-white mb-4">
-              Edit Message
+              {t('common.editMessage')}
             </Text>
             <TextInput
               value={editText}
               onChangeText={setEditText}
-              placeholder="Edit your message..."
+              placeholder={t('messageInput.editYourMessage')}
               placeholderTextColor="#737373"
               multiline
               autoFocus
@@ -595,7 +598,7 @@ export default function MessageItem({
                 className="px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-800"
               >
                 <Text className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                  Cancel
+                  {t('common.cancel')}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -608,7 +611,7 @@ export default function MessageItem({
                 className="px-4 py-2.5 rounded-xl bg-black dark:bg-white"
               >
                 <Text className="text-sm font-medium text-white dark:text-black">
-                  Save
+                  {t('common.save')}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -640,7 +643,7 @@ export default function MessageItem({
             />
           )}
           <Text className="text-white/60 text-sm mt-6 font-medium">
-            点击任意位置关闭
+            {t('common.clickToClose')}
           </Text>
         </TouchableOpacity>
       </Modal>

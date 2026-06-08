@@ -5,6 +5,9 @@ import { useEffect } from "react";
 import { useColorScheme } from "react-native";
 import "../global.css";
 
+// 初始化国际化
+import "../utils/i18n";
+
 export { ErrorBoundary } from "expo-router";
 
 export const unstable_settings = {
@@ -14,6 +17,11 @@ export const unstable_settings = {
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
+  // 初始化国际化
+  useEffect(() => {
+    // i18n 已在导入时初始化
+  }, []);
+
   const [loaded, error] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });

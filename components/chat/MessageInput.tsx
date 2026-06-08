@@ -6,18 +6,19 @@ import * as FileSystem from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
 import { ArrowUp, Mic, Plus, Square, X } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from 'react-i18next';
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  Keyboard,
-  Platform,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  useColorScheme,
-  View,
+    ActivityIndicator,
+    Alert,
+    Image,
+    Keyboard,
+    Platform,
+    ScrollView,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    useColorScheme,
+    View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -41,6 +42,7 @@ export default function MessageInput({
   isStreaming,
   onStop,
 }: MessageInputProps) {
+  const { t } = useTranslation();
   const [text, setText] = useState("");
   const [images, setImages] = useState<{ uri: string; base64: string }[]>([]);
   const [documents, setDocuments] = useState<
@@ -95,8 +97,8 @@ export default function MessageInput({
       const permission = await AudioModule.requestRecordingPermissionsAsync();
       if (!permission.granted) {
         Alert.alert(
-          "需要麦克风权限",
-          "请在系统设置中允许应用访问麦克风以进行语音输入。",
+          t('messageInput.microphonePermission'),
+          t('messageInput.microphonePermissionMessage'),
         );
         return;
       }
@@ -115,7 +117,7 @@ export default function MessageInput({
       }, 1000);
     } catch (err: any) {
       console.error("Failed to start recording", err);
-      Alert.alert("录音失败", "无法启动麦克风录音: " + err.message);
+      Alert.alert(t('common.error'), t('common.error') + ": " + err.message);
     }
   };
 
@@ -135,8 +137,8 @@ export default function MessageInput({
         const { baseUrl, apiKey, provider } = useSettingStore.getState();
         if (!apiKey.trim()) {
           Alert.alert(
-            "未配置 API Key",
-            "请先在“设置”页面中配置 API 密钥再使用语音转文字功能。",
+            t('messageInput.apiNotConfigured'),
+            t('messageInput.apiNotConfiguredMessage'),
           );
           setIsTranscribing(false);
           return;
@@ -144,8 +146,8 @@ export default function MessageInput({
 
         if (provider === "deepseek") {
           Alert.alert(
-            "提供商不支持语音识别",
-            "DeepSeek 官方目前不提供语音转文字接口。你可以临时切换到 OpenAI 提供商或使用支持 Whisper 的自定义(Custom)端点。",
+            t('messageInput.providerNotSupported'),
+            t('messageInput.providerNotSupportedMessage'),
           );
           setIsTranscribing(false);
           return;
@@ -158,16 +160,16 @@ export default function MessageInput({
           );
         } else {
           Alert.alert(
-            "语音转文字结果为空",
-            "无法识别录音内容，请重新录音并确保环境安静。",
+            t('messageInput.speechToTextEmpty'),
+            t('messageInput.speechToTextFailedMessage'),
           );
         }
       }
     } catch (err: any) {
       console.error("Transcription error", err);
       Alert.alert(
-        "语音转文字失败",
-        err.message || "网络请求错误，请检查 API 端点与网络连通性。",
+        t('messageInput.speechToTextFailed'),
+        err.message || t('messageInput.speechToTextNetworkError'),
       );
     } finally {
       setIsTranscribing(false);
@@ -180,18 +182,18 @@ export default function MessageInput({
 
   const handleAddAttachment = () => {
     if (images.length + documents.length >= 4) {
-      Alert.alert("已达上限", "单次最多上传 4 个附件（包含图片与文档）。");
+      Alert.alert(t('common.attachmentLimit'), t('messageInput.attachmentLimit'));
       return;
     }
 
     Alert.alert(
-      "添加附件",
-      "选择要上传的类型",
+      t('messageInput.addAttachment'),
+      t('messageInput.chooseType'),
       [
-        { text: "取消", style: "cancel" },
-        { text: "拍照上传", onPress: takePhoto },
-        { text: "选择相册图片", onPress: pickImage },
-        { text: "导入文档 (.txt/.md/.json等)", onPress: pickDocument },
+        { text: t('common.cancel'), style: "cancel" },
+        { text: t('messageInput.takePhoto'), onPress: takePhoto },
+        { text: t('messageInput.chooseFromGallery'), onPress: pickImage },
+        { text: t('messageInput.importDocument'), onPress: pickDocument },
       ],
       { cancelable: true },
     );
@@ -218,7 +220,7 @@ export default function MessageInput({
     if (!cameraPermission?.granted) {
       const permission = await requestCameraPermission();
       if (!permission.granted) {
-        Alert.alert("需要相机权限", "拍照上传需要访问你的相机设备。");
+        Alert.alert(t('messageInput.cameraPermission'), t('messageInput.cameraPermissionMessage'));
         return;
       }
     }
@@ -260,8 +262,8 @@ export default function MessageInput({
 
         if (asset.size && asset.size > 1 * 1024 * 1024) {
           Alert.alert(
-            "文件过大",
-            "为防止上下文超限，请选择小于 1MB 的文本文档。",
+            t('messageInput.fileTooLarge'),
+            t('messageInput.fileTooLargeMessage'),
           );
           return;
         }
@@ -274,7 +276,7 @@ export default function MessageInput({
       }
     } catch (err: any) {
       console.error("Failed to pick document", err);
-      Alert.alert("读取文件失败", "无法读取所选文档: " + err.message);
+      Alert.alert(t('common.error'), t('common.error') + ": " + err.message);
     }
   };
 
@@ -378,13 +380,13 @@ export default function MessageInput({
                 onPress={cancelRecording}
                 className="px-3.5 py-2 rounded-2xl bg-neutral-200 dark:bg-neutral-800 active:opacity-60"
               >
-                <Text className="text-xs text-red-500 font-bold">取消</Text>
+                <Text className="text-xs text-red-500 font-bold">{t('common.cancel')}</Text>
               </TouchableOpacity>
 
               <View className="flex-row items-center">
                 <View className="w-2.5 h-2.5 bg-red-500 rounded-full mr-2 animate-pulse" />
                 <Text className="text-sm font-bold text-neutral-800 dark:text-neutral-200">
-                  录音中... {formatTime(recordingSeconds)}
+                  {t('messageInput.recording', { time: formatTime(recordingSeconds) })}
                 </Text>
               </View>
 
@@ -392,7 +394,7 @@ export default function MessageInput({
                 onPress={() => stopRecording(true)}
                 className="px-4 py-2 rounded-2xl bg-green-500 active:opacity-60"
               >
-                <Text className="text-xs text-white font-bold">完成</Text>
+                <Text className="text-xs text-white font-bold">{t('common.finish')}</Text>
               </TouchableOpacity>
             </View>
           ) : isTranscribing ? (
@@ -402,7 +404,7 @@ export default function MessageInput({
                 color={isDark ? "#FFF" : "#000"}
               />
               <Text className="ml-3 text-sm text-neutral-500 dark:text-neutral-400 font-bold">
-                正在转换语音为文字...
+                {t('messageInput.transcribing')}
               </Text>
             </View>
           ) : (
@@ -427,7 +429,7 @@ export default function MessageInput({
               <TextInput
                 value={text}
                 onChangeText={setText}
-                placeholder="Message..."
+                placeholder={t('common.message')}
                 placeholderTextColor="#737373"
                 multiline
                 editable={!disabled}
