@@ -90,6 +90,9 @@ export interface ChatState {
   removeLastMessage: () => void;
   editUserMessage: (id: string, newContent: string) => void;
   clearMessages: () => void;
+
+  cacheImagesBase64: (messageId: string, base64Array: string[]) => void;
+  getCachedImagesBase64: (messageId: string) => string[] | undefined;
 }
 
 const defaultSessionId = "default";
@@ -99,6 +102,9 @@ const defaultSession: ChatSession = {
   messages: [],
   createdAt: Date.now(),
 };
+
+// Non-persisted runtime cache for imagesBase64 (too large for MMKV)
+const _base64Cache = new Map<string, string[]>();
 
 export const useChatStore = create<ChatState>()(
   persist(
@@ -179,6 +185,7 @@ export const useChatStore = create<ChatState>()(
         }),
 
       clearAllSessions: () => {
+        _base64Cache.clear();
         const id = Date.now().toString();
         const newSession: ChatSession = {
           id,
@@ -289,7 +296,8 @@ export const useChatStore = create<ChatState>()(
 
       setStreaming: (streaming) => set({ isStreaming: streaming }),
 
-      deleteSingleMessage: (id) =>
+      deleteSingleMessage: (id) => {
+        _base64Cache.delete(id);
         set((state) => {
           const activeId = state.currentSessionId;
           if (!activeId) return {};
@@ -306,7 +314,8 @@ export const useChatStore = create<ChatState>()(
             sessions: updatedSessions,
             messages: currentSession ? currentSession.messages : [],
           };
-        }),
+        });
+      },
 
       removeLastMessage: () =>
         set((state) => {
@@ -358,6 +367,7 @@ export const useChatStore = create<ChatState>()(
 
           const updatedSessions = state.sessions.map((s) => {
             if (s.id === activeId) {
+              s.messages.forEach((m) => _base64Cache.delete(m.id));
               return { ...s, messages: [] };
             }
             return s;
@@ -368,15 +378,30 @@ export const useChatStore = create<ChatState>()(
             messages: [],
           };
         }),
+
+      cacheImagesBase64: (messageId, base64Array) => {
+        _base64Cache.set(messageId, base64Array);
+      },
+
+      getCachedImagesBase64: (messageId) => {
+        return _base64Cache.get(messageId);
+      },
     }),
     {
       name: "chat-sessions",
       storage: createJSONStorage(() => mmkvStorage),
-      // 过滤只保存 sessions 和 currentSessionId
-      partialize: (state) => ({
-        sessions: state.sessions,
-        currentSessionId: state.currentSessionId,
-      }),
+      // 过滤只保存 sessions 和 currentSessionId,
+      // 深拷贝并剥离 imagesBase64（太大，不能存入 MMKV）
+      partialize: (state) => {
+        const strippedSessions = state.sessions.map((s) => ({
+          ...s,
+          messages: s.messages.map(({ imagesBase64, ...rest }) => rest),
+        }));
+        return {
+          sessions: strippedSessions,
+          currentSessionId: state.currentSessionId,
+        };
+      },
       // 在本地存储恢复完之后，手动把顶层 messages 初始化为当前选中的 session messages
       onRehydrateStorage: () => (state) => {
         if (state) {

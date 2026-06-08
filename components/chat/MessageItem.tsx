@@ -1,34 +1,34 @@
 import { Message } from "@/store/useChatStore";
 import * as Clipboard from "expo-clipboard";
-import { Image } from "expo-image";
 import * as Speech from "expo-speech";
 import {
-  Brain,
-  Check,
-  ChevronDown,
-  ChevronRight,
-  Copy,
-  Edit3,
-  RotateCcw,
-  Share2,
-  Trash2,
-  Volume2,
+    Brain,
+    Check,
+    ChevronDown,
+    ChevronRight,
+    Copy,
+    Edit3,
+    RotateCcw,
+    Share2,
+    Trash2,
+    Volume2,
 } from "lucide-react-native";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from 'react-i18next';
 import {
-  Animated,
-  Dimensions,
-  Modal,
-  Platform,
-  ScrollView,
-  Share,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  useColorScheme,
-  Vibration,
-  View,
+    Animated,
+    Dimensions,
+    Image,
+    Modal,
+    Platform,
+    ScrollView,
+    Share,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    useColorScheme,
+    Vibration,
+    View,
 } from "react-native";
 import Markdown from "react-native-markdown-display";
 
@@ -122,60 +122,6 @@ export default function MessageItem({
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
 
-  // Typewriter typewriter state and animation refs
-  const [displayedContent, setDisplayedContent] = useState(
-    message.content || "",
-  );
-  const queueRef = useRef<string[]>([]);
-  const timerRef = useRef<any>(null);
-  const currentLengthRef = useRef(0);
-  const isStreamingRef = useRef(disabled);
-
-  useEffect(() => {
-    isStreamingRef.current = disabled;
-  }, [disabled]);
-
-  useEffect(() => {
-    const shouldAnimate = !isUser && isLast && disabled;
-
-    if (!shouldAnimate) {
-      if (timerRef.current) clearInterval(timerRef.current);
-      queueRef.current = [];
-      setDisplayedContent(message.content || "");
-      currentLengthRef.current = (message.content || "").length;
-      return;
-    }
-
-    const currentText = message.content || "";
-    const lastLength = currentLengthRef.current;
-
-    if (currentText.length > lastLength) {
-      const newChars = currentText.slice(lastLength).split("");
-      queueRef.current.push(...newChars);
-      currentLengthRef.current = currentText.length;
-
-      if (!timerRef.current) {
-        timerRef.current = setInterval(() => {
-          if (queueRef.current.length > 0) {
-            const count =
-              queueRef.current.length > 30
-                ? 4
-                : queueRef.current.length > 10
-                  ? 2
-                  : 1;
-            const toAppend = queueRef.current.splice(0, count).join("");
-            setDisplayedContent((prev) => prev + toAppend);
-          } else {
-            if (!isStreamingRef.current) {
-              clearInterval(timerRef.current);
-              timerRef.current = null;
-            }
-          }
-        }, 20);
-      }
-    }
-  }, [message.content, isLast, disabled, isUser]);
-
   // TTS, Context Menu & Edit state
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -188,7 +134,6 @@ export default function MessageItem({
   useEffect(() => {
     return () => {
       Speech.stop();
-      if (timerRef.current) clearInterval(timerRef.current);
     };
   }, []);
 
@@ -396,8 +341,7 @@ export default function MessageItem({
                     <Image
                       source={img.source}
                       className={`${isSingle ? "w-48 h-48" : "w-24 h-24"} rounded-xl`}
-                      contentFit="cover"
-                      transition={200}
+                      resizeMode="cover"
                     />
                   </TouchableOpacity>
                 ))}
@@ -441,7 +385,7 @@ export default function MessageItem({
           </View>
         )}
 
-        {displayedContent ? (
+        {message.content ? (
           isUser ? (
             <Text className="text-[15px] leading-6 text-white dark:text-black">
               {message.content}
@@ -449,7 +393,7 @@ export default function MessageItem({
           ) : (
             <View className="w-full">
               <Markdown style={markdownStyles(isDark)} rules={renderRules}>
-                {displayedContent}
+                {message.content}
               </Markdown>
             </View>
           )
@@ -638,8 +582,7 @@ export default function MessageItem({
                 width: Dimensions.get("window").width - 32,
                 height: Dimensions.get("window").height * 0.7,
               }}
-              contentFit="contain"
-              transition={200}
+              resizeMode="contain"
             />
           )}
           <Text className="text-white/60 text-sm mt-6 font-medium">

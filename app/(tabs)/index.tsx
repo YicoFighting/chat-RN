@@ -48,6 +48,8 @@ export default function ChatScreen() {
     renameSession,
     setCurrentSessionId,
     clearAllSessions,
+    cacheImagesBase64,
+    getCachedImagesBase64,
   } = useChatStore();
 
   const {
@@ -112,9 +114,14 @@ export default function ChatScreen() {
         return;
       }
 
-      // Add user message
+      // Add user message — base64 kept in message for display + API;
+      // partialize() strips it before MMKV persistence.
+      const userMessageId = Date.now().toString();
+      if (imagesBase64 && imagesBase64.length > 0) {
+        cacheImagesBase64(userMessageId, imagesBase64);
+      }
       const userMessage: Message = {
-        id: Date.now().toString(),
+        id: userMessageId,
         role: "user",
         content: text,
         imagesBase64,
@@ -265,7 +272,7 @@ export default function ChatScreen() {
       { provider, baseUrl, apiKey, model, temperature, maxTokens },
       history,
       userMsg.content,
-      userMsg.imagesBase64,
+      getCachedImagesBase64(userMsg.id) || userMsg.imagesBase64,
       controller.signal,
       (chunk) => {
         accumulated += chunk;
@@ -308,7 +315,9 @@ export default function ChatScreen() {
     async (messageId: string, newContent: string) => {
       const currentMsgs = useChatStore.getState().messages;
       const editMsg = currentMsgs.find((m) => m.id === messageId);
-      const imagesBase64 = editMsg ? editMsg.imagesBase64 : undefined;
+      const imagesBase64 = editMsg
+        ? getCachedImagesBase64(editMsg.id) || editMsg.imagesBase64
+        : undefined;
 
       // 1. Truncate conversation and update message content
       useChatStore.getState().editUserMessage(messageId, newContent);

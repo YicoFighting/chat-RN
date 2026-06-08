@@ -2,23 +2,25 @@ import { useSettingStore } from "@/store/useSettingStore";
 import { transcribeAudio } from "@/utils/audioClient";
 import { AudioModule, RecordingPresets, useAudioRecorder } from "expo-audio";
 import * as DocumentPicker from "expo-document-picker";
-import * as FileSystem from "expo-file-system";
+import { File as ExpoFile, Paths } from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
 import { ArrowUp, Mic, Plus, Square, X } from "lucide-react-native";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from 'react-i18next';
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    Keyboard,
-    Platform,
-    ScrollView,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    useColorScheme,
-    View,
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  Image,
+  Keyboard,
+  Modal,
+  Platform,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  useColorScheme,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -44,7 +46,7 @@ export default function MessageInput({
 }: MessageInputProps) {
   const { t } = useTranslation();
   const [text, setText] = useState("");
-  const [images, setImages] = useState<{ uri: string; base64: string }[]>([]);
+  const [images, setImages] = useState<{ uri: string; cachedUri: string; base64: string }[]>([]);
   const [documents, setDocuments] = useState<
     { name: string; content: string; uri: string }[]
   >([]);
@@ -58,6 +60,9 @@ export default function MessageInput({
   const [isTranscribing, setIsTranscribing] = useState(false);
   const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const recordingTimerRef = useRef<any>(null);
+
+  // Full-screen image preview (before sending)
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   // Camera permissions hook
   const [cameraPermission, requestCameraPermission] =
@@ -209,9 +214,20 @@ export default function MessageInput({
 
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0];
+      // Write base64 to cache for a stable file:// URI that expo-image can load
+      let cachedUri = asset.uri;
+      if (asset.base64) {
+        try {
+          const dest = new ExpoFile(Paths.cache, `img_${Date.now()}.jpg`);
+          dest.write(asset.base64, { encoding: "base64" });
+          cachedUri = dest.uri;
+        } catch (e) {
+          console.warn("Image cache write failed, using original uri", e);
+        }
+      }
       setImages((prev) => [
         ...prev,
-        { uri: asset.uri, base64: asset.base64 || "" },
+        { uri: asset.uri, cachedUri, base64: asset.base64 || "" },
       ]);
     }
   };
@@ -234,9 +250,19 @@ export default function MessageInput({
 
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0];
+      let cachedUri = asset.uri;
+      if (asset.base64) {
+        try {
+          const dest = new ExpoFile(Paths.cache, `img_${Date.now()}.jpg`);
+          dest.write(asset.base64, { encoding: "base64" });
+          cachedUri = dest.uri;
+        } catch (e) {
+          console.warn("Image cache write failed, using original uri", e);
+        }
+      }
       setImages((prev) => [
         ...prev,
-        { uri: asset.uri, base64: asset.base64 || "" },
+        { uri: asset.uri, cachedUri, base64: asset.base64 || "" },
       ]);
     }
   };
@@ -268,7 +294,8 @@ export default function MessageInput({
           return;
         }
 
-        const content = await FileSystem.readAsStringAsync(asset.uri);
+        const file = new ExpoFile(asset.uri);
+        const content = await file.text();
         setDocuments((prev) => [
           ...prev,
           { name: asset.name, content: content || "", uri: asset.uri },
@@ -291,7 +318,8 @@ export default function MessageInput({
   const handleSend = () => {
     if (!text.trim() && images.length === 0 && documents.length === 0) return;
     const base64s = images.map((img) => img.base64).filter(Boolean);
-    const uris = images.map((img) => img.uri).filter(Boolean);
+    // Use cachedUri (stable file:// in app cache) for reliable display
+    const uris = images.map((img) => img.cachedUri).filter(Boolean);
 
     // Pass text, images (base64 + uri) and the parsed document structures
     onSend(
@@ -335,10 +363,15 @@ export default function MessageInput({
           >
             {images.map((img, index) => (
               <View key={`img-${index}`} className="relative w-16 h-16 mr-3">
-                <Image
-                  source={{ uri: img.uri }}
-                  className="w-16 h-16 rounded-xl"
-                />
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => setPreviewImage(img.cachedUri)}
+                >
+                  <Image
+                    source={{ uri: img.uri }}
+                    className="w-16 h-16 rounded-xl"
+                  />
+                </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => removeImage(index)}
                   className="absolute -top-1 -right-1 bg-neutral-900 rounded-full p-1"
@@ -464,6 +497,34 @@ export default function MessageInput({
           )}
         </View>
       </View>
+
+      {/* Full-screen Image Preview Modal (before sending) */}
+      <Modal
+        visible={!!previewImage}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPreviewImage(null)}
+      >
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => setPreviewImage(null)}
+          className="flex-1 bg-black/90 items-center justify-center"
+        >
+          {previewImage && (
+            <Image
+              source={{ uri: previewImage }}
+              style={{
+                width: Dimensions.get("window").width - 32,
+                height: Dimensions.get("window").height * 0.7,
+              }}
+              resizeMode="contain"
+            />
+          )}
+          <Text className="text-white/60 text-sm mt-6 font-medium">
+            {t('common.clickToClose')}
+          </Text>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
