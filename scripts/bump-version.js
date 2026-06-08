@@ -3,6 +3,7 @@ const path = require("path");
 const { execSync } = require("child_process");
 
 const appJsonPath = path.join(__dirname, "..", "app.json");
+const packageJsonPath = path.join(__dirname, "..", "package.json");
 const buildGradlePath = path.join(
   __dirname,
   "..",
@@ -37,6 +38,16 @@ appJson.expo.version = newVersion;
 fs.writeFileSync(appJsonPath, JSON.stringify(appJson, null, 2) + "\n", "utf8");
 console.log(`app.json: ${currentVersion} -> ${newVersion}`);
 
+// Update package.json
+const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
+packageJson.version = newVersion;
+fs.writeFileSync(
+  packageJsonPath,
+  JSON.stringify(packageJson, null, 2) + "\n",
+  "utf8",
+);
+console.log(`package.json: ${currentVersion} -> ${newVersion}`);
+
 // Update android/app/build.gradle (if exists)
 if (fs.existsSync(buildGradlePath)) {
   let gradleContent = fs.readFileSync(buildGradlePath, "utf8");
@@ -64,7 +75,7 @@ if (fs.existsSync(buildGradlePath)) {
 
 // Git commit
 try {
-  execSync("git add app.json", { stdio: "ignore" });
+  execSync("git add app.json package.json", { stdio: "ignore" });
 
   // Also stage build.gradle if it exists and is tracked
   try {

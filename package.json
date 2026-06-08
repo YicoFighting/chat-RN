@@ -1,5 +1,5 @@
 {
-  "name": "my-chat-app",
+  "name": "chat-me",
   "main": "expo-router/entry",
   "version": "1.0.0",
   "dependencies": {
@@ -49,13 +49,11 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "build:android": "eas build --platform android",
-    "build:ios": "eas build --platform ios",
-    "build:all": "eas build --platform all",
-    "build:android:local": "eas build --platform android --local",
-    "build:ios:local": "eas build --platform ios --local",
-    "build:android:preview": "eas build --platform android --profile preview",
-    "build:ios:preview": "eas build --platform ios --profile preview"
+    "build:android": "build-release.bat",
+    "build:android:debug": "npx expo prebuild --platform android && cd android && gradlew.bat assembleDebug",
+    "build:android:eas": "eas build --platform android",
+    "build:ios:eas": "eas build --platform ios",
+    "build:all:eas": "eas build --platform all"
   },
   "private": true
 }

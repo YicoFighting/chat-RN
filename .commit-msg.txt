@@ -1,0 +1,1 @@
+fix: bump-version also updates package.json version
