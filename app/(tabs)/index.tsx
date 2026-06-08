@@ -575,7 +575,8 @@ export default function ChatScreen() {
           renderItem={renderItem}
           keyExtractor={keyExtractor}
           ListEmptyComponent={renderEmpty}
-          contentContainerStyle={{ flexGrow: 1, paddingTop: 16 }}
+          contentContainerStyle={{ flexGrow: 1, paddingTop: 12, paddingBottom: 8 }}
+          ItemSeparatorComponent={() => <View style={{ height: 4 }} />}
           showsVerticalScrollIndicator={false}
           onScroll={(event) => {
             const { layoutMeasurement, contentOffset, contentSize } =

@@ -5,7 +5,6 @@ import {
     Brain,
     Check,
     ChevronDown,
-    ChevronRight,
     Copy,
     Edit3,
     RotateCcw,
@@ -201,9 +200,9 @@ export default function MessageItem({
 
   const markdownStyles = (isDark: boolean) => ({
     body: {
-      color: isDark ? "#E5E5E5" : "#171717",
-      fontSize: 15,
-      lineHeight: 22,
+      color: isDark ? "#E5E5E5" : "#1A1A1A",
+      fontSize: 16,
+      lineHeight: 26,
     },
     link: {
       color: "#3B82F6",
@@ -211,77 +210,89 @@ export default function MessageItem({
     },
     paragraph: {
       marginTop: 0,
-      marginBottom: 8,
+      marginBottom: 12,
     },
     heading1: {
-      color: isDark ? "#FFF" : "#000",
-      fontSize: 20,
+      color: isDark ? "#FFF" : "#0A0A0A",
+      fontSize: 22,
       fontWeight: "bold" as const,
+      marginTop: 20,
+      marginBottom: 10,
+      letterSpacing: -0.3,
+    },
+    heading2: {
+      color: isDark ? "#FFF" : "#0A0A0A",
+      fontSize: 18,
+      fontWeight: "bold" as const,
+      marginTop: 16,
+      marginBottom: 8,
+      letterSpacing: -0.2,
+    },
+    heading3: {
+      color: isDark ? "#F5F5F5" : "#171717",
+      fontSize: 16,
+      fontWeight: "700" as const,
       marginTop: 12,
       marginBottom: 6,
     },
-    heading2: {
-      color: isDark ? "#FFF" : "#000",
-      fontSize: 17,
-      fontWeight: "bold" as const,
-      marginTop: 10,
-      marginBottom: 4,
-    },
-    heading3: {
-      color: isDark ? "#FFF" : "#000",
-      fontSize: 15,
-      fontWeight: "bold" as const,
-      marginTop: 8,
-      marginBottom: 4,
-    },
     bullet_list: {
-      marginTop: 4,
-      marginBottom: 8,
+      marginTop: 6,
+      marginBottom: 12,
     },
     ordered_list: {
-      marginTop: 4,
-      marginBottom: 8,
+      marginTop: 6,
+      marginBottom: 12,
     },
     list_item: {
-      lineHeight: 20,
-      marginVertical: 2,
+      lineHeight: 24,
+      marginVertical: 3,
+      fontSize: 15,
     },
     code_inline: {
       fontFamily: Platform.OS === "ios" ? "Courier New" : "monospace",
-      backgroundColor: isDark ? "#262626" : "#E5E5E5",
-      color: isDark ? "#F43F5E" : "#D0173E",
-      paddingHorizontal: 5,
-      paddingVertical: 2,
-      borderRadius: 4,
+      backgroundColor: isDark ? "#262626" : "#F0F0F0",
+      color: isDark ? "#F43F5E" : "#C2185B",
+      paddingHorizontal: 6,
+      paddingVertical: 3,
+      borderRadius: 6,
+      fontSize: 13,
     },
     blockquote: {
-      backgroundColor: isDark ? "#1C1917" : "#F5F5F4",
-      borderLeftColor: "#A3A3A3",
-      borderLeftWidth: 4,
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      marginVertical: 8,
-      borderRadius: 4,
+      backgroundColor: isDark ? "#1A1A1A" : "#FAFAFA",
+      borderLeftColor: isDark ? "#404040" : "#D4D4D4",
+      borderLeftWidth: 3,
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      marginVertical: 12,
+      borderRadius: 8,
     },
     table: {
       borderWidth: 1,
-      borderColor: isDark ? "#404040" : "#D4D4D4",
-      borderRadius: 6,
-      marginVertical: 8,
+      borderColor: isDark ? "#333" : "#E5E5E5",
+      borderRadius: 10,
+      marginVertical: 12,
+      overflow: "hidden" as const,
     },
     thead: {
-      backgroundColor: isDark ? "#262626" : "#F5F5F5",
+      backgroundColor: isDark ? "#1F1F1F" : "#FAFAFA",
     },
     th: {
-      padding: 8,
-      fontWeight: "bold" as const,
+      padding: 10,
+      fontWeight: "600" as const,
+      fontSize: 14,
     },
     tr: {
       borderBottomWidth: 1,
-      borderBottomColor: isDark ? "#404040" : "#D4D4D4",
+      borderBottomColor: isDark ? "#333" : "#E5E5E5",
     },
     td: {
-      padding: 8,
+      padding: 10,
+    },
+    hr: {
+      marginTop: 16,
+      marginBottom: 16,
+      borderTopColor: isDark ? "#333" : "#E5E5E5",
+      borderTopWidth: 1,
     },
   });
 
@@ -302,116 +313,146 @@ export default function MessageItem({
 
   return (
     <View
-      className={`px-4 py-2 w-full ${isUser ? "items-end" : "items-start"}`}
+      className={`px-4 w-full ${isUser ? "items-end" : "items-start"}`}
+      style={{ paddingVertical: isUser ? 6 : 4 }}
     >
-      <TouchableOpacity
-        activeOpacity={0.95}
-        onLongPress={handleLongPress}
-        className={`max-w-[85%] rounded-2xl px-4 py-3 ${
-          isUser
-            ? "bg-black dark:bg-white"
-            : "bg-neutral-100 dark:bg-neutral-800"
-        }`}
-      >
-        {/* Multi-image preview grid/flex */}
-        {((message.imagesUri && message.imagesUri.length > 0) ||
-          (message.imagesBase64 && message.imagesBase64.length > 0)) &&
-          (() => {
-            const displayImages =
-              message.imagesUri && message.imagesUri.length > 0
-                ? message.imagesUri.map((uri) => ({
-                    source: { uri },
-                    key: uri,
-                    previewUri: uri,
-                  }))
-                : (message.imagesBase64 || []).map((b64, i) => ({
-                    source: { uri: `data:image/jpeg;base64,${b64}` },
-                    key: `b64-${i}`,
-                    previewUri: `data:image/jpeg;base64,${b64}`,
-                  }));
-            const isSingle = displayImages.length === 1;
-            return (
-              <View className="flex-row flex-wrap gap-2 mb-2">
-                {displayImages.map((img) => (
-                  <TouchableOpacity
-                    key={img.key}
-                    activeOpacity={0.8}
-                    onPress={() => setPreviewImageUri(img.previewUri)}
-                  >
-                    <Image
-                      source={img.source}
-                      className={`${isSingle ? "w-48 h-48" : "w-24 h-24"} rounded-xl`}
-                      resizeMode="cover"
-                    />
-                  </TouchableOpacity>
-                ))}
-              </View>
-            );
-          })()}
+      {/* ─── User Message ─── */}
+      {isUser && (
+        <TouchableOpacity
+          activeOpacity={0.9}
+          onLongPress={handleLongPress}
+          className="max-w-[80%]"
+        >
+          {/* Image attachments */}
+          {((message.imagesUri && message.imagesUri.length > 0) ||
+            (message.imagesBase64 && message.imagesBase64.length > 0)) &&
+            (() => {
+              const displayImages =
+                message.imagesUri && message.imagesUri.length > 0
+                  ? message.imagesUri.map((uri) => ({
+                      source: { uri },
+                      key: uri,
+                      previewUri: uri,
+                    }))
+                  : (message.imagesBase64 || []).map((b64, i) => ({
+                      source: { uri: `data:image/jpeg;base64,${b64}` },
+                      key: `b64-${i}`,
+                      previewUri: `data:image/jpeg;base64,${b64}`,
+                    }));
+              const isSingle = displayImages.length === 1;
+              return (
+                <View className="flex-row flex-wrap gap-2 mb-2">
+                  {displayImages.map((img) => (
+                    <TouchableOpacity
+                      key={img.key}
+                      activeOpacity={0.8}
+                      onPress={() => setPreviewImageUri(img.previewUri)}
+                    >
+                      <Image
+                        source={img.source}
+                        className={`${isSingle ? "w-52 h-52" : "w-24 h-24"} rounded-2xl`}
+                        resizeMode="cover"
+                      />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              );
+            })()}
 
-        {/* Thinking section */}
-        {message.thinking && !isUser && (
-          <View className="mb-2">
-            <TouchableOpacity
-              onPress={toggleThinking}
-              className="flex-row items-center py-1"
-            >
-              <Brain
-                color={
-                  isUser ? (thinkingExpanded ? "#fff" : "#aaa") : "#737373"
-                }
-                size={14}
-              />
-              <Text className="text-xs text-neutral-500 dark:text-neutral-400 ml-1.5 font-medium">
-                {t('common.thinking')}
+          {/* User text bubble */}
+          {message.content ? (
+            <View className="bg-black dark:bg-white rounded-[20px] rounded-br-md px-4 py-3">
+              <Text className="text-[15px] leading-6 text-white dark:text-black font-medium">
+                {message.content}
               </Text>
-              {thinkingExpanded ? (
-                <ChevronDown color="#737373" size={14} className="ml-1" />
-              ) : (
-                <ChevronRight color="#737373" size={14} className="ml-1" />
-              )}
-            </TouchableOpacity>
+            </View>
+          ) : null}
+        </TouchableOpacity>
+      )}
 
-            {thinkingExpanded && (
-              <Animated.View
-                style={{ opacity: fadeAnim }}
-                className="border-l-2 border-neutral-300 dark:border-neutral-600 pl-3 mt-1 mb-1"
+      {/* ─── Assistant Message ─── */}
+      {!isUser && (
+        <View className="w-full max-w-[92%]">
+          {/* Thinking section - refined card */}
+          {message.thinking && (
+            <View className="mb-3">
+              <TouchableOpacity
+                onPress={toggleThinking}
+                className="flex-row items-center py-2.5 px-4 rounded-2xl bg-neutral-100/80 dark:bg-neutral-800/60 active:opacity-70"
               >
-                <Text className="text-xs text-neutral-500 dark:text-neutral-400 leading-5">
-                  {message.thinking}
+                <Brain
+                  color={isDark ? "#A3A3A3" : "#737373"}
+                  size={15}
+                />
+                <Text className="text-[13px] text-neutral-500 dark:text-neutral-400 ml-2 font-semibold tracking-wide">
+                  {t('common.thinking')}
                 </Text>
-              </Animated.View>
-            )}
-          </View>
-        )}
+                <ChevronDown
+                  color={isDark ? "#737373" : "#A3A3A3"}
+                  size={15}
+                  className="ml-1"
+                  style={{
+                    transform: [{ rotate: thinkingExpanded ? '0deg' : '-90deg' }],
+                  }}
+                />
+              </TouchableOpacity>
 
-        {message.content ? (
-          isUser ? (
-            <Text className="text-[15px] leading-6 text-white dark:text-black">
-              {message.content}
-            </Text>
-          ) : (
+              {thinkingExpanded && (
+                <Animated.View
+                  style={{ opacity: fadeAnim }}
+                  className="mt-2 mx-1 px-4 py-3 rounded-xl bg-neutral-50 dark:bg-neutral-900/40"
+                >
+                  <Text className="text-[13px] text-neutral-500 dark:text-neutral-400 leading-[22px]">
+                    {message.thinking}
+                  </Text>
+                </Animated.View>
+              )}
+            </View>
+          )}
+
+          {/* AI content - clean typography, no bubble */}
+          {message.content ? (
             <View className="w-full">
               <Markdown style={markdownStyles(isDark)} rules={renderRules}>
                 {message.content}
               </Markdown>
             </View>
-          )
-        ) : null}
-      </TouchableOpacity>
+          ) : null}
 
-      {/* Assistant actions (Regenerate) */}
-      {!isUser && isLast && !disabled && message.content && (
-        <View className="flex-row items-center mt-2 pl-2">
-          <TouchableOpacity
-            onPress={onRegenerate}
-            className="flex-row items-center px-3 py-1.5 rounded-full bg-neutral-50 dark:bg-[#171717] border border-neutral-200 dark:border-neutral-800 active:bg-neutral-100"
-          >
-            <RotateCcw color={isDark ? "#FFF" : "#737373"} size={12} />
-            <Text className="text-xs font-semibold text-neutral-600 dark:text-neutral-300 ml-1.5">
-              {t('common.regenerate')}
-            </Text>
-          </TouchableOpacity>
+          {/* Assistant action buttons */}
+          {(isLast && !disabled && message.content) && (
+            <View className="flex-row items-center mt-3 -ml-1 gap-1">
+              <TouchableOpacity
+                onPress={onRegenerate}
+                className="p-2 rounded-full active:bg-neutral-100 dark:active:bg-neutral-800"
+              >
+                <RotateCcw color={isDark ? "#737373" : "#A3A3A3"} size={16} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleCopyAll}
+                className="p-2 rounded-full active:bg-neutral-100 dark:active:bg-neutral-800"
+              >
+                <Copy color={isDark ? "#737373" : "#A3A3A3"} size={16} />
+              </TouchableOpacity>
+              {message.content ? (
+                <TouchableOpacity
+                  onPress={handleTTS}
+                  className="p-2 rounded-full active:bg-neutral-100 dark:active:bg-neutral-800"
+                >
+                  <Volume2
+                    color={isSpeaking ? "#EF4444" : isDark ? "#737373" : "#A3A3A3"}
+                    size={16}
+                  />
+                </TouchableOpacity>
+              ) : null}
+              <TouchableOpacity
+                onPress={handleLongPress}
+                className="p-2 rounded-full active:bg-neutral-100 dark:active:bg-neutral-800"
+              >
+                <Edit3 color={isDark ? "#737373" : "#A3A3A3"} size={16} />
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       )}
 
