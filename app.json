@@ -48,7 +48,8 @@
         }
       ],
       "expo-audio",
-      "expo-asset"
+      "expo-asset",
+      "./plugins/withReleaseSigning"
     ],
     "experiments": {
       "typedRoutes": true
