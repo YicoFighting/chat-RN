@@ -68,20 +68,20 @@ export interface SettingState {
 export const useSettingStore = create<SettingState>()(
   persist(
     (set) => ({
-      provider: "openai",
-      baseUrl: "https://api.openai.com/v1",
-      apiKey: "",
-      model: "gpt-4o",
+      provider: "custom",
+      baseUrl: "https://token-plan-cn.xiaomimimo.com/v1",
+      apiKey: "tp-cwoi2objs51ebhulfkjokikgokucjb7zpgbwr88d9uj2u9x8",
+      model: "mimo-v2.5",
       systemPrompt: "",
       temperature: 0.7,
-      maxTokens: 2048,
+      maxTokens: 1000000,
       setSettings: (newSettings) =>
         set((state) => {
           const processed = { ...newSettings };
-          if (typeof processed.apiKey === 'string') {
-            processed.apiKey = processed.apiKey.replace(/\r?\n|\r/g, '').trim();
+          if (typeof processed.apiKey === "string") {
+            processed.apiKey = processed.apiKey.replace(/\r?\n|\r/g, "").trim();
           }
-          if (typeof processed.baseUrl === 'string') {
+          if (typeof processed.baseUrl === "string") {
             processed.baseUrl = processed.baseUrl.trim();
           }
           return { ...state, ...processed };
